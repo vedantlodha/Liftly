@@ -1,0 +1,17 @@
+{
+  "//": "Node-side TypeScript: build scripts and unit tests. Kept separate from the app config because Expo's base sets customConditions:[\"react-native\"], which cannot resolve node:* builtins.",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "target": "ESNext",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "lib": ["ESNext"],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["scripts/**/*.ts", "src/**/*.test.ts"]
+}

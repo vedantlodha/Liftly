@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "liftly",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "expo",
+        "start",
+        "--port",
+        "8081"
+      ],
+      "port": 8081
+    }
+  ]
+}
