@@ -102,6 +102,15 @@ export const routineItems = sqliteTable(
     /** Free text so ranges survive: "6–8", "12", "500m". */
     targetReps: text('target_reps').notNull().default('10'),
     targetWeightKg: real('target_weight_kg'),
+    /**
+     * Unit this item's weight is expressed in, stamped when it is added.
+     *
+     * Stored rather than resolved from the user's default at read time: the
+     * default is a preference for *new* exercises, and letting it apply
+     * retroactively silently rewrites what past routines and logged workouts
+     * mean. Null only on rows that predate this column.
+     */
+    weightUnit: text('weight_unit'),
     /** Overrides the user's default rest for this exercise. */
     restSeconds: integer('rest_seconds'),
     ...lifecycle,
@@ -121,8 +130,15 @@ export const scheduleDays = sqliteTable(
   {
     id: text('id').primaryKey(),
     dayOfWeek: integer('day_of_week').notNull(),
-    /** Null means a rest day in the saved plan. */
+    /** Null means no routine. `isRest` says whether that was a choice. */
     routineId: text('routine_id').references(() => routines.id, { onDelete: 'set null' }),
+    /**
+     * True when the user deliberately made this a rest day.
+     *
+     * Without it, "rest" and "never configured" are the same empty value, and
+     * the app cannot tell a recovery day from a gap in the plan.
+     */
+    isRest: integer('is_rest', { mode: 'boolean' }).notNull().default(false),
     overrideRoutineId: text('override_routine_id').references(() => routines.id, { onDelete: 'set null' }),
     /** Set when the override is a rest day, which `overrideRoutineId: null` cannot express. */
     overrideIsRest: integer('override_is_rest', { mode: 'boolean' }).notNull().default(false),
@@ -157,7 +173,7 @@ export const sessions = sqliteTable(
   'sessions',
   {
     id: text('id').primaryKey(),
-    /** Null for an ad-hoc session, which by definition has no plan to reconcile against. */
+    /** Null for a freestyle workout, which by definition has no plan to reconcile against. */
     routineId: text('routine_id').references(() => routines.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     startedAt: integer('started_at', { mode: 'timestamp_ms' }).notNull(),

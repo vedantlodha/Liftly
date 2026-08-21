@@ -3,19 +3,27 @@ import { Pressable, View } from 'react-native';
 
 import { DefaultUnitCard } from '@/features/routines/DefaultUnitCard';
 import { SwipeToDelete } from '@/features/session/SwipeToDelete';
+import { usePeekOnce } from '@/features/session/usePeekOnce';
 import { routineStats, useRoutines } from '@/stores/useRoutines';
 import { toast } from '@/stores/useToast';
 import { border, color, font, ink, radius, space } from '@/theme/tokens';
-import { Screen, ScreenHeader, Scroll, Text } from '@/ui';
+import { EmptyState, ListGlyph, Screen, ScreenHeader, Scroll, Text } from '@/ui';
 
 export default function RoutinesScreen() {
   const routines = useRoutines((s) => s.routines);
   const remove = useRoutines((s) => s.remove);
+  const restore = useRoutines((s) => s.restore);
+  // Nothing to demonstrate the gesture on when the list is empty.
+  const peek = usePeekOnce('routines', routines.length > 0);
 
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={`${routines.length} saved ${routines.length === 1 ? 'routine' : 'routines'}`}
+        eyebrow={
+          routines.length
+            ? `${routines.length} saved ${routines.length === 1 ? 'routine' : 'routines'}`
+            : 'No saved routines yet'
+        }
         title="Routines"
       />
 
@@ -25,6 +33,14 @@ export default function RoutinesScreen() {
       >
         <DefaultUnitCard />
 
+        {routines.length === 0 && (
+          <EmptyState
+            icon={<ListGlyph />}
+            title="No routines yet"
+            message="Build your first one with the + button, then put it on a day in Schedule."
+          />
+        )}
+
         <View
           style={{
             backgroundColor: color.surface,
@@ -32,15 +48,21 @@ export default function RoutinesScreen() {
             borderColor: border.card,
             borderRadius: radius.menu,
             overflow: 'hidden',
+            // Collapsed entirely when empty, so its border does not sit under
+            // the empty-state card as a stray line.
+            display: routines.length ? 'flex' : 'none',
           }}
         >
           {routines.map((routine, i) => (
             <SwipeToDelete
               key={routine.name}
+              peek={peek && i === 0}
               label="Delete routine"
               onDelete={() => {
                 remove(routine.name);
-                toast(`${routine.name} deleted`);
+                // A swipe is quick and easy to trigger by accident, so the
+                // toast is the only thing standing between that and a lost plan.
+                toast(`${routine.name} deleted`, () => restore(routine, i));
               }}
             >
               <Pressable

@@ -7,8 +7,8 @@
 </head>
 <body>
 <x-dc>
-<helmet data-dc-atomics>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<helmet data-dc-atomics="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#E7E9EC;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Archivo,Helvetica,sans-serif}
@@ -20,11 +20,15 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes sheetUp{from{transform:translateY(102%)}to{transform:translateY(0)}}
 @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes peekNudge{0%,12%{transform:translateX(0)}42%{transform:translateX(34px)}72%,100%{transform:translateX(0)}}
+@keyframes snapPulse{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes shakeA{0%,100%{transform:translateX(0)}18%{transform:translateX(-7px)}38%{transform:translateX(6px)}58%{transform:translateX(-4px)}78%{transform:translateX(3px)}}
+@keyframes shakeB{0%,100%{transform:translateX(0)}18%{transform:translateX(-7px)}38%{transform:translateX(6px)}58%{transform:translateX(-4px)}78%{transform:translateX(3px)}}
 @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 </style>
 </helmet>
 
-<x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" nav-buttons="{{ yes }}" on-back="{{ sysBack }}" on-home="{{ sysHome }}" hint-size="412px,892px">
+<x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" nav-buttons="{{ yes }}" keyboard="{{ kbOpen }}" on-back="{{ sysBack }}" on-home="{{ sysHome }}" hint-size="412px,892px">
 
 <div style="height:100%;position:relative;overflow:hidden;background:#F4F5F7;color:#14161A;font-family:Archivo,Helvetica,sans-serif;-webkit-font-smoothing:antialiased">
 
@@ -68,6 +72,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
           <div style="font:500 9px/1 'DM Mono',monospace;letter-spacing:.08em;color:rgb(124,125,127)">{{ d.letter }}</div>
           <sc-if value="{{ d.isDone }}"><div style="width:100%;height:30px;border-radius:7px;background:#2F6BFF;display:flex;align-items:center;justify-content:center;font:600 13px Archivo,sans-serif;color:#FFFFFF">✓</div></sc-if>
           <sc-if value="{{ d.isToday }}"><div style="width:100%;height:30px;border-radius:7px;background:#EBF1FF;border:1.5px solid #2F6BFF;display:flex;align-items:center;justify-content:center;font:600 11px Archivo,sans-serif;color:#2F6BFF">{{ d.num }}</div></sc-if>
+          <sc-if value="{{ d.isRest }}"><div style="width:100%;height:30px;border-radius:7px;background:#E4F3E9;border:1px solid rgba(30,105,70,0.22);display:flex;align-items:center;justify-content:center;font:500 11px Archivo,sans-serif;color:rgb(28,98,64)">{{ d.num }}</div></sc-if>
           <sc-if value="{{ d.isSelected }}"><div style="width:100%;height:30px;border-radius:7px;background:#14161A;display:flex;align-items:center;justify-content:center;font:600 11px Archivo,sans-serif;color:#FFFFFF">{{ d.num }}</div></sc-if>
           <sc-if value="{{ d.isPlain }}"><div style="width:100%;height:30px;border-radius:7px;background:#FFFFFF;border:1px solid rgba(20,22,26,0.101);display:flex;align-items:center;justify-content:center;font:500 11px Archivo,sans-serif;color:rgb(114,115,117)">{{ d.num }}</div></sc-if>
         </div>
@@ -95,7 +100,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
           <sc-for list="{{ switchOptions }}" as="o" hint-placeholder-count="5">
             <div onClick="{{ o.onTap }}" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;cursor:pointer" style-hover="background:#F3F4F7">
               <div style="flex:1;min-width:0">
-                <div style="font:500 14.5px Archivo,sans-serif;color:rgb(20,22,26)">{{ o.name }}</div>
+                <div style="font:500 14.5px Archivo,sans-serif;color:{{ o.color }}">{{ o.name }}</div>
                 <div style="font:400 11px Archivo,sans-serif;color:rgb(114,115,117);margin-top:3px">{{ o.sub }}</div>
               </div>
               <sc-if value="{{ o.on }}"><div style="width:20px;height:20px;border-radius:50%;background:#2F6BFF;display:flex;align-items:center;justify-content:center;font:600 11px Archivo,sans-serif;color:#FFFFFF">✓</div></sc-if>
@@ -138,7 +143,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
           <sc-for list="{{ switchOptions }}" as="o" hint-placeholder-count="5">
             <div onClick="{{ o.onTap }}" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;cursor:pointer" style-hover="background:#F3F4F7">
               <div style="flex:1;min-width:0">
-                <div style="font:500 14.5px Archivo,sans-serif;color:rgb(20,22,26)">{{ o.name }}</div>
+                <div style="font:500 14.5px Archivo,sans-serif;color:{{ o.color }}">{{ o.name }}</div>
                 <div style="font:400 11px Archivo,sans-serif;color:rgb(114,115,117);margin-top:3px">{{ o.sub }}</div>
               </div>
               <sc-if value="{{ o.on }}"><div style="width:20px;height:20px;border-radius:50%;background:#2F6BFF;display:flex;align-items:center;justify-content:center;font:600 11px Archivo,sans-serif;color:#FFFFFF">✓</div></sc-if>
@@ -153,7 +158,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 
     <sc-if value="{{ dayIsToday }}" hint-placeholder-val="{{ yes }}">
     <div onClick="{{ startEmpty }}" style="height:50px;border-radius:14px;background:#FFFFFF;border:1px solid rgba(20,22,26,0.112);display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;margin-bottom:30px">
-      <div style="font:500 14px Archivo,sans-serif;color:rgb(36,38,42)">Start an ad-hoc workout</div>
+      <div style="font:500 14px Archivo,sans-serif;color:rgb(36,38,42)">Freestyle workout</div>
     </div>
     </sc-if>
 
@@ -243,13 +248,31 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
         </sc-for>
       </div>
     </div>
+    <sc-if value="{{ noRoutines }}">
+      <div style="background:#FFFFFF;border:1px dashed rgba(20,22,26,0.169);border-radius:18px;padding:34px 24px;text-align:center;margin-bottom:14px">
+        <div style="width:46px;height:46px;border-radius:14px;background:#F3F4F7;margin:0 auto 16px;display:flex;align-items:center;justify-content:center">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="width:17px;height:2.4px;border-radius:2px;background:rgba(20,22,26,0.28)"></div>
+            <div style="width:17px;height:2.4px;border-radius:2px;background:rgba(20,22,26,0.28)"></div>
+            <div style="width:10px;height:2.4px;border-radius:2px;background:rgba(20,22,26,0.28)"></div>
+          </div>
+        </div>
+        <div style="font:600 17px Archivo,sans-serif;letter-spacing:-0.015em">No routines yet</div>
+        <div style="font:400 13px/1.5 Archivo,sans-serif;color:rgb(119,120,122);margin-top:7px;text-wrap:pretty">Build your first one with the + button, then put it on a day in Schedule.</div>
+      </div>
+    </sc-if>
     <div style="background:#FFFFFF;border:1px solid rgba(20,22,26,0.112);border-radius:16px;overflow:hidden">
       <sc-for list="{{ workoutCards }}" as="r" hint-placeholder-count="5">
         <div style="position:relative;overflow:hidden;touch-action:pan-y">
-          <div style="position:absolute;inset:0;background:#FFECEA;display:flex;align-items:center;padding-left:18px;opacity:{{ r.killOpacity }}">
-            <div style="font:600 11px 'DM Mono',monospace;letter-spacing:.1em;color:#B3311F">DELETE ROUTINE</div>
+          <div style="position:absolute;inset:0;background:{{ r.killBg }};display:flex;align-items:center;gap:11px;padding-left:18px;opacity:{{ r.killOpacity }}">
+            <div style="width:15px;height:16px;position:relative;flex:none;animation:{{ r.snapAnim }}">
+              <div style="position:absolute;left:0;right:0;top:3px;height:2px;border-radius:2px;background:#B3311F"></div>
+              <div style="position:absolute;left:4px;right:4px;top:0;height:2px;border-radius:2px;background:#B3311F"></div>
+              <div style="position:absolute;left:2px;right:2px;top:5px;bottom:0;border:2px solid #B3311F;border-top:none;border-radius:0 0 3px 3px"></div>
+            </div>
+            <div style="font:600 11px 'DM Mono',monospace;letter-spacing:.1em;color:#B3311F">{{ r.killLabel }}</div>
           </div>
-          <div onClick="{{ r.onTap }}" onPointerDown="{{ r.onDragStart }}" onPointerMove="{{ r.onDragMove }}" onPointerUp="{{ r.onDragEnd }}" onPointerCancel="{{ r.onDragEnd }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid rgba(20,22,26,0.075);cursor:pointer;position:relative;background:#FFFFFF;transform:translateX({{ r.dx }});transition:{{ r.dragTransition }}" style-hover="background:#F5F6F8">
+          <div onClick="{{ r.onTap }}" onPointerDown="{{ r.onDragStart }}" onPointerMove="{{ r.onDragMove }}" onPointerUp="{{ r.onDragEnd }}" onPointerCancel="{{ r.onDragEnd }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid rgba(20,22,26,0.075);cursor:pointer;position:relative;background:#FFFFFF;transform:translateX({{ r.dx }});transition:{{ r.dragTransition }};animation:{{ r.peekAnim }}" style-hover="background:#F5F6F8">
             <div style="flex:1;min-width:0">
               <div style="font:600 15.5px Archivo,sans-serif;letter-spacing:-0.012em">{{ r.name }}</div>
               <div style="font:400 11.5px Archivo,sans-serif;color:rgb(119,120,122);margin-top:4px">{{ r.stats }}</div>
@@ -339,7 +362,10 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
     <div style="font:600 31px/1.05 Archivo,sans-serif;letter-spacing:-0.025em">Exercises</div>
     <div style="margin-top:16px;height:44px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(20,22,26,0.124);display:flex;align-items:center;padding:0 14px;gap:10px">
       <div style="width:13px;height:13px;border:1.5px solid rgb(119,120,122);border-radius:50%;flex:none"></div>
-      <input onInput="{{ onQuery }}" placeholder="Search exercises" style="flex:1;background:transparent;border:none;outline:none;color:#14161A;font:400 15px Archivo,sans-serif" />
+      <input ref="{{ searchRef }}" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search exercises" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#14161A;font:400 15px Archivo,sans-serif">
+      <sc-if value="{{ hasQuery }}">
+        <div onClick="{{ clearQuery }}" title="Clear search" style="width:18px;height:18px;border-radius:50%;background:rgba(20,22,26,0.181);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font:500 11px Archivo,sans-serif;color:#FFFFFF" style-active="background:rgba(20,22,26,0.204)">×</div>
+      </sc-if>
     </div>
     <div style="display:flex;gap:7px;overflow-x:auto;padding:14px 0 12px">
       <sc-for list="{{ filters }}" as="f" hint-placeholder-count="6">
@@ -393,6 +419,12 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
     <div style="font:600 31px/1.05 Archivo,sans-serif;letter-spacing:-0.025em;margin-top:9px">History</div>
   </div>
   <div style="flex:1;overflow-y:auto;padding:20px 22px 34px">
+    <sc-if value="{{ noHistory }}">
+      <div style="background:#FFFFFF;border:1px dashed rgba(20,22,26,0.169);border-radius:18px;padding:34px 24px;text-align:center">
+        <div style="font:600 17px Archivo,sans-serif;letter-spacing:-0.015em">Nothing logged yet</div>
+        <div style="font:400 13px/1.5 Archivo,sans-serif;color:rgb(119,120,122);margin-top:7px;text-wrap:pretty">Finish a workout and it will show up here with every set you logged.</div>
+      </div>
+    </sc-if>
     <div style="display:flex;flex-direction:column;gap:8px">
       <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
         <div onClick="{{ h.onTap }}" style="background:#FFFFFF;border:1px solid rgba(20,22,26,0.112);border-radius:16px;padding:16px;cursor:pointer" style-hover="border-color:rgba(47,107,255,0.45)">
@@ -505,9 +537,15 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
     <div onClick="{{ saveBuild }}" style="font:600 14px Archivo,sans-serif;color:#2F6BFF;cursor:pointer">Save</div>
   </div>
   <div style="flex:1;overflow-y:auto;padding:22px 22px 40px">
-    <div style="display:flex;align-items:center;gap:10px;border-bottom:1.5px solid rgba(20,22,26,0.135);padding-bottom:10px">
-      <input value="{{ buildName }}" onChange="{{ onBuildName }}" placeholder="Name this routine" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#14161A;font:600 27px Archivo,sans-serif;letter-spacing:-0.025em;padding:0" />
+    <div style="display:flex;align-items:center;gap:10px;border-bottom:1.5px solid {{ nameLine }};padding-bottom:10px;animation:{{ nameAnim }}">
+      <input ref="{{ nameRef }}" value="{{ buildName }}" onChange="{{ onBuildName }}" placeholder="Name this routine" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#14161A;font:600 27px Archivo,sans-serif;letter-spacing:-0.025em;padding:0">
     </div>
+    <sc-if value="{{ nameMissing }}">
+      <div style="display:flex;align-items:center;gap:7px;margin-top:10px">
+        <div style="width:15px;height:15px;border-radius:50%;background:#B3311F;display:flex;align-items:center;justify-content:center;font:600 10px Archivo,sans-serif;color:#FFFFFF;flex:none">!</div>
+        <div style="font:500 12px Archivo,sans-serif;color:#B3311F">Give this routine a name before saving</div>
+      </div>
+    </sc-if>
     <div style="font:400 12px Archivo,sans-serif;color:rgb(124,125,127);margin:12px 0 24px">{{ buildMeta }}</div>
 
     <sc-if value="{{ buildEmpty }}">
@@ -625,10 +663,15 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
         </div>
         <sc-for list="{{ it.rows }}" as="s" hint-placeholder-count="3">
           <div style="position:relative;overflow:hidden;border-radius:10px;touch-action:pan-y">
-          <div style="position:absolute;inset:4px 2px;border-radius:10px;background:#FFECEA;display:flex;align-items:center;padding-left:16px;opacity:{{ s.killOpacity }}">
-            <div style="font:600 11px 'DM Mono',monospace;letter-spacing:.1em;color:#B3311F">DELETE SET</div>
+          <div style="position:absolute;inset:4px 2px;border-radius:10px;background:{{ s.killBg }};display:flex;align-items:center;gap:9px;padding-left:14px;opacity:{{ s.killOpacity }}">
+            <div style="width:13px;height:14px;position:relative;flex:none;animation:{{ s.snapAnim }}">
+              <div style="position:absolute;left:0;right:0;top:2px;height:1.8px;border-radius:2px;background:#B3311F"></div>
+              <div style="position:absolute;left:3.5px;right:3.5px;top:0;height:1.8px;border-radius:2px;background:#B3311F"></div>
+              <div style="position:absolute;left:1.5px;right:1.5px;top:4px;bottom:0;border:1.8px solid #B3311F;border-top:none;border-radius:0 0 3px 3px"></div>
+            </div>
+            <div style="font:600 10px 'DM Mono',monospace;letter-spacing:.1em;color:#B3311F">{{ s.killLabel }}</div>
           </div>
-          <div onPointerDown="{{ s.onDragStart }}" onPointerMove="{{ s.onDragMove }}" onPointerUp="{{ s.onDragEnd }}" onPointerCancel="{{ s.onDragEnd }}" style="display:flex;gap:8px;align-items:center;padding:4px 2px;position:relative;background:#FFFFFF;transform:translateX({{ s.dx }});transition:{{ s.dragTransition }}">
+          <div onPointerDown="{{ s.onDragStart }}" onPointerMove="{{ s.onDragMove }}" onPointerUp="{{ s.onDragEnd }}" onPointerCancel="{{ s.onDragEnd }}" style="display:flex;gap:8px;align-items:center;padding:4px 2px;position:relative;background:#FFFFFF;transform:translateX({{ s.dx }});transition:{{ s.dragTransition }};animation:{{ s.peekAnim }}">
             <div style="width:26px;font:500 13px 'DM Mono',monospace;color:rgb(119,120,122)">{{ s.i }}</div>
             <div onClick="{{ s.onW }}" style="flex:1;height:40px;border-radius:10px;opacity:{{ s.dim }};background:#F1F2F5;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer">
               <div style="font:500 16px 'DM Mono',monospace;color:#14161A">{{ s.w }}</div>
@@ -728,7 +771,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 <!-- ══════════════ SHEETS ══════════════ -->
 <sc-if value="{{ sheetOpen }}">
 <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:90;background:rgba(20,22,26,0.32);animation:fadeIn .2s ease"></div>
-<div style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:#FFFFFF;border-top:1px solid rgba(20,22,26,0.135);border-radius:26px 26px 0 0;padding:10px 20px 24px;max-height:80%;display:flex;flex-direction:column;animation:sheetUp .28s cubic-bezier(.22,1,.36,1)">
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:#FFFFFF;border-top:1px solid rgba(20,22,26,0.135);border-radius:26px 26px 0 0;padding:10px 20px 24px;height:{{ sheetH }};max-height:{{ sheetMax }};display:flex;flex-direction:column;animation:sheetUp .28s cubic-bezier(.22,1,.36,1)">
   <div style="width:38px;height:4px;border-radius:2px;background:rgba(20,22,26,0.204);margin:0 auto 16px;flex:none"></div>
 
   <!-- day edit -->
@@ -740,7 +783,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
       <sc-for list="{{ dayOptions }}" as="o" hint-placeholder-count="6">
         <div onClick="{{ o.onTap }}" style="display:flex;align-items:center;gap:12px;padding:14px 15px;border-radius:13px;background:#F3F4F7;cursor:pointer">
           <div style="flex:1;min-width:0">
-            <div style="font:500 14.5px Archivo,sans-serif">{{ o.name }}</div>
+            <div style="font:500 14.5px Archivo,sans-serif;color:{{ o.color }}">{{ o.name }}</div>
             <div style="font:400 11px Archivo,sans-serif;color:rgb(124,125,127);margin-top:3px">{{ o.sub }}</div>
           </div>
           <sc-if value="{{ o.on }}"><div style="width:22px;height:22px;border-radius:50%;background:#2F6BFF;display:flex;align-items:center;justify-content:center;font:600 12px Archivo,sans-serif;color:#FFFFFF">✓</div></sc-if>
@@ -767,18 +810,36 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 
   <!-- exercise picker -->
   <sc-if value="{{ shPick }}">
-  <div style="display:flex;flex-direction:column;min-height:0">
+  <div style="flex:1;display:flex;flex-direction:column;min-height:0">
     <div style="display:flex;align-items:baseline;justify-content:space-between;flex:none">
       <div style="font:600 21px Archivo,sans-serif;letter-spacing:-0.02em">Add exercises</div>
       <div onClick="{{ confirmPick }}" style="font:600 14px Archivo,sans-serif;color:#2F6BFF;cursor:pointer">{{ pickLabel }}</div>
     </div>
-    <div style="margin:14px 0 12px;height:42px;border-radius:12px;background:#F3F4F7;display:flex;align-items:center;padding:0 14px;gap:10px;flex:none">
+    <div style="margin:14px 0 12px;height:42px;border-radius:12px;background:#F3F4F7;display:flex;align-items:center;padding:0 14px;gap:14px;flex:none">
       <div style="width:12px;height:12px;border:1.5px solid rgb(119,120,122);border-radius:50%;flex:none"></div>
-      <input onInput="{{ onQuery }}" placeholder="Search exercises" style="flex:1;background:transparent;border:none;outline:none;color:#14161A;font:400 14.5px Archivo,sans-serif" />
+      <input ref="{{ searchRef }}" value="{{ query }}" onChange="{{ onQuery }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" placeholder="Search exercises" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#14161A;font:400 14.5px Archivo,sans-serif">
+      <sc-if value="{{ hasQuery }}">
+        <div onClick="{{ clearQuery }}" title="Clear search" style="width:18px;height:18px;border-radius:50%;background:rgba(20,22,26,0.181);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font:500 11px Archivo,sans-serif;color:#FFFFFF" style-active="background:rgba(20,22,26,0.204)">×</div>
+      </sc-if>
     </div>
-    <div style="overflow-y:auto;display:flex;flex-direction:column">
+    <div style="display:flex;gap:7px;overflow-x:auto;margin:0 -20px 4px;padding:0 20px 10px;flex:none">
+      <sc-for list="{{ pickFilters }}" as="p" hint-placeholder-count="8">
+        <div onClick="{{ p.onTap }}" style="flex:none;cursor:pointer">
+          <sc-if value="{{ p.on }}"><div style="padding:7px 13px;border-radius:20px;background:#2F6BFF;font:500 12px Archivo,sans-serif;color:#FFFFFF;white-space:nowrap">{{ p.label }}</div></sc-if>
+          <sc-if value="{{ p.off }}"><div style="padding:7px 13px;border-radius:20px;background:#F3F4F7;border:1px solid rgba(20,22,26,0.101);font:500 12px Archivo,sans-serif;color:rgb(74,76,80);white-space:nowrap">{{ p.label }}</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font:400 11px 'DM Mono',monospace;color:rgb(134,135,137);padding:0 2px 8px;flex:none">{{ pickCount }}</div>
+    <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+      <sc-if value="{{ pickEmpty }}">
+        <div style="padding:34px 16px 26px;text-align:center;flex:none">
+          <div style="font:500 15px Archivo,sans-serif;color:rgb(80,81,84)">No match</div>
+          <div style="font:400 13px Archivo,sans-serif;color:rgb(119,120,122);margin-top:6px">Try another name or muscle group.</div>
+        </div>
+      </sc-if>
       <sc-for list="{{ pickList }}" as="x" hint-placeholder-count="8">
-        <div onClick="{{ x.onTap }}" style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(20,22,26,0.078);cursor:pointer">
+        <div onClick="{{ x.onTap }}" style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(20,22,26,0.078);cursor:pointer;flex:none">
           <div style="flex:1;min-width:0">
             <div style="font:400 14.5px Archivo,sans-serif">{{ x.n }}</div>
             <div style="font:400 11px Archivo,sans-serif;color:rgb(124,125,127);margin-top:3px">{{ x.meta }}</div>
@@ -793,16 +854,19 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 
   <!-- swap -->
   <sc-if value="{{ shSwap }}">
-  <div style="display:flex;flex-direction:column;min-height:0">
+  <div style="flex:1;display:flex;flex-direction:column;min-height:0">
     <div style="font:600 21px Archivo,sans-serif;letter-spacing:-0.02em;flex:none">Swap {{ swapFrom }}</div>
     <div style="font:400 12.5px Archivo,sans-serif;color:rgb(114,115,117);margin:6px 0 14px;flex:none">{{ swapHint }}</div>
-    <div style="margin-bottom:12px;height:42px;border-radius:12px;background:#F3F4F7;display:flex;align-items:center;padding:0 14px;gap:10px;flex:none">
+    <div style="margin-bottom:12px;height:42px;border-radius:12px;background:#F3F4F7;display:flex;align-items:center;padding:0 14px;gap:14px;flex:none">
       <div style="width:12px;height:12px;border:1.5px solid rgb(110,112,116);border-radius:50%;flex:none"></div>
-      <input onInput="{{ onQuery }}" placeholder="Search all exercises" style="flex:1;background:transparent;border:none;outline:none;color:#14161A;font:400 14.5px Archivo,sans-serif" />
+      <input ref="{{ searchRef }}" value="{{ query }}" onChange="{{ onQuery }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" placeholder="Search all exercises" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#14161A;font:400 14.5px Archivo,sans-serif">
+      <sc-if value="{{ hasQuery }}">
+        <div onClick="{{ clearQuery }}" title="Clear search" style="width:18px;height:18px;border-radius:50%;background:rgba(20,22,26,0.181);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font:500 11px Archivo,sans-serif;color:#FFFFFF" style-active="background:rgba(20,22,26,0.204)">×</div>
+      </sc-if>
     </div>
-    <div style="overflow-y:auto;display:flex;flex-direction:column;gap:7px">
+    <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px">
       <sc-if value="{{ swapEmpty }}">
-        <div style="text-align:center;padding:34px 16px 26px">
+        <div style="text-align:center;padding:34px 16px 26px;flex:none">
           <div style="font:500 15px Archivo,sans-serif;color:rgb(80,81,84)">No match</div>
           <div style="font:400 13px Archivo,sans-serif;color:rgb(119,120,122);margin-top:6px">Try another name or muscle group.</div>
         </div>
@@ -885,6 +949,20 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 </div>
 </sc-if>
 
+<sc-if value="{{ buildAsk }}">
+<div onClick="{{ cancelBuildExit }}" style="position:absolute;inset:0;z-index:96;background:rgba(20,22,26,0.38);animation:fadeIn .16s ease"></div>
+<div style="position:absolute;left:26px;right:26px;top:50%;transform:translateY(-50%);z-index:97;background:#FFFFFF;border-radius:22px;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(20,22,26,0.28);animation:pop .18s ease">
+  <div style="font:600 21px/1.15 Archivo,sans-serif;letter-spacing:-0.022em">Discard changes?</div>
+  <div style="font:400 13px/1.5 Archivo,sans-serif;color:rgb(106,107,110);margin-top:8px;text-wrap:pretty">{{ buildAskLead }}</div>
+  <div onClick="{{ cancelBuildExit }}" style="margin-top:20px;height:52px;border-radius:14px;background:#2F6BFF;display:flex;align-items:center;justify-content:center;cursor:pointer">
+    <div style="font:600 15px Archivo,sans-serif;color:#FFFFFF">Keep editing</div>
+  </div>
+  <div onClick="{{ confirmBuildExit }}" style="margin-top:9px;height:50px;border-radius:14px;background:#FFECEA;border:1px solid rgba(200,42,26,0.22);display:flex;align-items:center;justify-content:center;cursor:pointer">
+    <div style="font:600 14.5px Archivo,sans-serif;color:#B3311F">Discard</div>
+  </div>
+</div>
+</sc-if>
+
 <sc-if value="{{ delAsk }}">
 <div onClick="{{ cancelDelete }}" style="position:absolute;inset:0;z-index:96;background:rgba(20,22,26,0.38);animation:fadeIn .16s ease"></div>
 <div style="position:absolute;left:26px;right:26px;top:50%;transform:translateY(-50%);z-index:97;background:#FFFFFF;border-radius:22px;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(20,22,26,0.28);animation:pop .18s ease">
@@ -931,8 +1009,11 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 </sc-if>
 
 <sc-if value="{{ toast }}">
-<div style="position:absolute;left:20px;right:20px;bottom:104px;z-index:95;background:#14161A;border-radius:13px;padding:13px 16px;animation:pop .2s ease">
-  <div style="font:500 13px Archivo,sans-serif;color:#FFFFFF">{{ toast }}</div>
+<div style="position:absolute;left:20px;right:20px;bottom:104px;z-index:95;background:#14161A;border-radius:13px;padding:13px 16px;display:flex;align-items:center;gap:14px;animation:pop .2s ease">
+  <div style="flex:1;min-width:0;font:500 13px Archivo,sans-serif;color:#FFFFFF">{{ toast }}</div>
+  <sc-if value="{{ canUndo }}">
+    <div onClick="{{ undoDelete }}" style="font:600 12px 'DM Mono',monospace;letter-spacing:.1em;color:#7FA8FF;cursor:pointer;padding:2px 2px;flex:none" style-active="color:#B9CEFF">UNDO</div>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -940,7 +1021,7 @@ div::-webkit-scrollbar{width:0;height:0;display:none}
 </x-import>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:402,&quot;height&quot;:874},&quot;restSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:90,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:240,&quot;step&quot;:15,&quot;unit&quot;:&quot;s&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:412,&quot;height&quot;:892},&quot;emptyState&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;restSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:90,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:240,&quot;step&quot;:15,&quot;unit&quot;:&quot;s&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
 class Component extends DCLogic {
   DB = [
     ['Barbell Bench Press','Chest','Barbell'],['Incline Dumbbell Press','Chest','Dumbbell'],
@@ -1002,31 +1083,31 @@ class Component extends DCLogic {
     week: [
       { d: 'Mon', r: 'Push A', tw: false, done: true },
       { d: 'Tue', r: 'Pull A', tw: false, done: false },
-      { d: 'Wed', r: null, tw: false, done: false },
+      { d: 'Wed', r: null, tw: false, done: false, restSet: true },
       { d: 'Thu', r: 'Legs', tw: false, done: false },
       { d: 'Fri', r: 'Push B', tw: false, done: false },
       { d: 'Sat', r: 'Conditioning', tw: true, done: false },
-      { d: 'Sun', r: null, tw: false, done: false }
+      { d: 'Sun', r: null, tw: false, done: false, restSet: true }
     ],
     history: [
-      { name: 'Push A', date: 'Mon 10 Aug', dur: '58m', sets: '16', vol: '8.4t', start: '18:12', ex: [
+      { name: 'Push A', date: 'Mon 10 Aug', daysAgo: 4, dur: '58m', sets: '16', vol: '8.4t', start: '18:12', ex: [
         { n: 'Barbell Bench Press', sets: ['77.5 × 8', '77.5 × 8', '77.5 × 7', '75 × 8'] },
         { n: 'Incline Dumbbell Press', sets: ['30 × 9', '30 × 8', '30 × 8'] },
         { n: 'Seated Dumbbell Press', sets: ['22 × 8', '22 × 8', '20 × 10'] },
         { n: 'Cable Fly', sets: ['15 × 13', '15 × 12', '15 × 12'] },
         { n: 'Triceps Pushdown', sets: ['30 × 12', '30 × 12', '30 × 11'] } ] },
-      { name: 'Legs', date: 'Sat 8 Aug', dur: '1h 04m', sets: '18', vol: '12.5t', start: '09:40', ex: [
+      { name: 'Legs', date: 'Sat 8 Aug', daysAgo: 6, dur: '1h 04m', sets: '18', vol: '12.5t', start: '09:40', ex: [
         { n: 'Back Squat', sets: ['107.5 × 5', '107.5 × 5', '107.5 × 5', '100 × 6'] },
         { n: 'Romanian Deadlift', sets: ['90 × 8', '90 × 8', '90 × 8'] },
         { n: 'Leg Press', sets: ['175 × 12', '175 × 12', '175 × 10'] },
         { n: 'Lying Leg Curl', sets: ['45 × 11', '45 × 11', '45 × 10'] },
         { n: 'Standing Calf Raise', sets: ['70 × 15', '70 × 15', '70 × 14', '70 × 12'] } ] },
-      { name: 'Push B', date: 'Fri 7 Aug', dur: '52m', sets: '14', vol: '7.1t', start: '18:05', ex: [
+      { name: 'Push B', date: 'Fri 7 Aug', daysAgo: 7, dur: '52m', sets: '14', vol: '7.1t', start: '18:05', ex: [
         { n: 'Overhead Press', sets: ['50 × 6', '50 × 6', '50 × 5', '45 × 8'] },
         { n: 'Flat Dumbbell Press', sets: ['32 × 10', '32 × 9', '32 × 9'] },
         { n: 'Lateral Raise', sets: ['10 × 15', '10 × 15', '10 × 14', '10 × 12'] },
         { n: 'Skullcrusher', sets: ['30 × 10', '30 × 10', '30 × 9'] } ] },
-      { name: 'Pull A', date: 'Wed 5 Aug', dur: '58m', sets: '16', vol: '9.9t', start: '18:20', ex: [
+      { name: 'Pull A', date: 'Wed 5 Aug', daysAgo: 9, dur: '58m', sets: '16', vol: '9.9t', start: '18:20', ex: [
         { n: 'Deadlift', sets: ['135 × 5', '135 × 5', '135 × 5'] },
         { n: 'Pull-Up', sets: ['BW × 8', 'BW × 8', 'BW × 7', 'BW × 6'] },
         { n: 'Seated Cable Row', sets: ['60 × 10', '60 × 10', '60 × 10'] },
@@ -1046,13 +1127,34 @@ class Component extends DCLogic {
   }
 
   componentDidUpdate() {
+    this.applyEmptyProp();
+    if (this.state.tab === 'workouts' && !this.state.view && this.state.routines.length) this.peekOnce('routines');
+    if (this.state.view === 'active' && this.state.session) this.peekOnce('sets');
     if (this._lv !== this.state.view || this._lt !== this.state.tab) {
       this._lv = this.state.view; this._lt = this.state.tab;
       requestAnimationFrame(() => this.scrollStripToToday());
     }
   }
 
+  emptyData() {
+    return {
+      routines: [], history: [],
+      week: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => ({ d: d, r: null, tw: false, done: false })),
+      session: null, builder: null, finished: null, selOff: 0, histAt: null, view: null
+    };
+  }
+
+  applyEmptyProp() {
+    const want = !!(this.props.emptyState);
+    if (this._emptyApplied === want) return;
+    this._emptyApplied = want;
+    this.setState(want ? this.emptyData() : this.clone(this._seed));
+  }
+
   componentDidMount() {
+    this._seed = { routines: this.state.routines, week: this.state.week, history: this.state.history };
+    this.applyEmptyProp();
+    if (this.state.tab === 'workouts' && this.state.routines.length) this.peekOnce('routines');
     setTimeout(() => this.scrollStripToToday(), 0);
     this.t = setInterval(() => {
       if ((this.state.session || this.state.restEnd) && !this.state.pausedAt) this.setState({ now: Date.now() });
@@ -1060,10 +1162,18 @@ class Component extends DCLogic {
   }
   componentWillUnmount() { clearInterval(this.t); if (this.tt) clearTimeout(this.tt); }
 
-  flash(msg) {
-    this.setState({ toast: msg });
+  flash(msg, undo) {
+    this.setState({ toast: msg, undo: undo || null });
     if (this.tt) clearTimeout(this.tt);
-    this.tt = setTimeout(() => this.setState({ toast: null }), 2200);
+    this.tt = setTimeout(() => this.setState({ toast: null, undo: null }), undo ? 5000 : 2200);
+  }
+
+  peekOnce(key) {
+    if (this._peeked && this._peeked[key]) return;
+    this._peeked = Object.assign({}, this._peeked);
+    this._peeked[key] = true;
+    this.setState({ peek: key });
+    setTimeout(() => { if (this.state.peek === key) this.setState({ peek: null }); }, 1500);
   }
   clone(o) { return JSON.parse(JSON.stringify(o)); }
   shiftReps(v, d) {
@@ -1092,7 +1202,7 @@ class Component extends DCLogic {
       sets: Array.from({ length: it.sets }, () => ({ w: it.w ? String(it.w) : '—', r: String(parseInt(it.reps, 10) || 10), done: false }))
     })) : [];
     this.setState({ pausedAt: null, pauseAcc: 0, restLeftMs: 0 });
-    return { name: name || 'Ad-hoc session', routine: name, start: Date.now(), items, changes: [] };
+    return { name: name || 'Freestyle workout', routine: name, start: Date.now(), items, changes: [] };
   }
   mut(fn) { const s = this.clone(this.state.session); fn(s); this.setState({ session: s }); }
 
@@ -1109,9 +1219,16 @@ class Component extends DCLogic {
     if (s.delAsk) return this.setState({ delAsk: false });
     if (s.unitAt !== null && s.unitAt !== undefined) return this.setState({ unitAt: null });
     if (s.pad) return this.setState({ pad: null });
-    if (s.sheet) return this.setState({ sheet: null, dayEdit: null, swapAt: null, detail: null });
+    if (s.kbOpen) return this.setState({ kbOpen: false });
+    if (s.sheet) return this.setState({ sheet: null, dayEdit: null, swapAt: null, detail: null, kbOpen: false });
     if (s.switcher) return this.setState({ switcher: false });
-    if (s.view === 'build') return this.setState({ view: s.from || null, builder: null, from: null });
+    if (s.buildAsk) return this.setState({ buildAsk: false });
+    if (s.view === 'build') {
+      const orig = s.bOrig ? JSON.parse(s.bOrig) : { name: '', tag: 'Custom', items: [] };
+      const dirty = !!s.builder && JSON.stringify({ name: s.builder.name, tag: s.builder.tag, items: s.builder.items }) !== JSON.stringify(orig);
+      if (dirty) return this.setState({ buildAsk: true });
+      return this.setState({ view: s.from || null, builder: null, from: null, bOrig: null, nameErr: 0 });
+    }
     if (s.view === 'active') return this.setState({ leaveOpen: true });
     if (s.view === 'summary') return this.setState({ view: null, session: null, tab: 'today' });
     if (s.view === 'histDetail') return this.setState({ view: 'history', histAt: null });
@@ -1149,9 +1266,27 @@ class Component extends DCLogic {
       goLib: () => this.setState({ view: 'library', query: '', pickTarget: null }),
       goHist: () => this.setState({ view: 'history' }),
       toast: st.toast,
+      canUndo: !!st.undo,
+      undoDelete: () => {
+        const u = st.undo;
+        if (!u) return;
+        if (u.k === 'routine') {
+          this.setState(x => {
+            const rs = x.routines.slice();
+            rs.splice(Math.min(u.i, rs.length), 0, u.routine);
+            return { routines: rs, week: u.week, toast: null, undo: null };
+          });
+        } else if (u.k === 'set') {
+          this.mut(x => {
+            if (x.items[u.i]) x.items[u.i].sets.splice(Math.min(u.j, x.items[u.i].sets.length), 0, u.set);
+          });
+          this.setState({ toast: null, undo: null });
+        }
+        if (this.tt) clearTimeout(this.tt);
+      },
       sysBack: () => this.back(),
       sysHome: () => this.setState({
-        tab: 'today', view: null, sheet: null, pad: null, switcher: false,
+        tab: 'today', view: null, sheet: null, pad: null, switcher: false, kbOpen: false,
         builder: null, dayEdit: null, swapAt: null, detail: null, histAt: null
       })
     };
@@ -1202,29 +1337,42 @@ class Component extends DCLogic {
       : selRoutine ? selRoutine.items.map(i => ({ n: i.n, t: i.sets + ' × ' + i.reps })) : [];
     const nx = st.week.slice(ti + 1).concat(st.week).find(d => d.r);
     out.nextUp = nx ? nx.r + ' on ' + nx.d : 'nothing';
-    out.restTitle = selOff === 0 ? 'Rest day' : selOff < 0 ? 'Nothing logged' : 'Rest day';
-    out.restSub = selOff === 0 ? 'Nothing scheduled. Next up is ' + (nx ? nx.r + ' on ' + nx.d : 'nothing') + '.'
+    const selDay = st.week[selWd] || {};
+    out.restTitle = selOff < 0 ? 'Nothing logged'
+      : selDay.restSet ? 'Rest day' : 'No routine added';
+    out.restSub = selOff === 0
+      ? (selDay.restSet
+        ? (nx ? 'Recovery day. Next up is ' + nx.r + ' on ' + nx.d + '.' : 'Recovery day — nothing else scheduled.')
+        : st.routines.length === 0
+          ? 'No routines yet. Build one and put it on a day to get started.'
+          : 'Nothing scheduled for today. Pick a workout or take the rest.')
       : selOff < 0 ? 'No session recorded on this day.' : 'No workout scheduled for this day.';
     out.switcherOpen = !!st.switcher;
     out.caret = st.switcher ? '225deg' : '45deg';
     out.toggleSwitcher = () => this.setState({ switcher: !st.switcher });
     out.closeSwitcher = () => this.setState({ switcher: false });
     out.switchOptions = st.routines.map(r => ({
-      name: r.name, sub: r.items.length + ' exercises · ' + r.tag, on: today.r === r.name,
+      name: r.name, sub: r.items.length + ' exercises · ' + r.tag, on: today.r === r.name, color: 'rgb(20,22,26)',
       onTap: () => {
         const w = self.clone(st.week);
-        w[ti].r = r.name; if (r.name !== today.r) w[ti].tw = true;
+        w[ti].r = r.name; w[ti].restSet = false; if (r.name !== today.r) w[ti].tw = true;
         self.setState({ week: w, switcher: false });
         if (r.name !== today.r) self.flash('Today swapped to ' + r.name + ' — this week only');
       }
     })).concat([{
-      name: 'Rest', sub: 'No session today', on: false,
+      name: 'Rest', sub: 'No session today', on: false, color: 'rgb(20,22,26)',
       onTap: () => {
         const w = self.clone(st.week);
-        w[ti].r = null; w[ti].tw = true;
+        w[ti].r = null; w[ti].tw = true; w[ti].restSet = true;
         self.setState({ week: w, switcher: false });
         self.flash('Today set to rest — this week only');
       }
+    }, {
+      name: '+ New routine', sub: 'Build one from scratch', on: false, color: '#2F6BFF',
+      onTap: () => this.setState({
+        switcher: false, view: 'build', from: null, bOrig: null, nameErr: 0,
+        builder: { name: '', tag: 'Custom', items: [] }
+      })
     }]);
     out.startToday = () => {
       if (st.session) { this.setState({ view: 'active' }); return this.flash('Resuming your open session'); }
@@ -1233,9 +1381,9 @@ class Component extends DCLogic {
     out.startEmpty = () => {
       if (st.session) { this.setState({ view: 'active' }); return this.flash('Resuming your open session'); }
       this.setState({ view: 'active', session: this.buildSession(null), restEnd: null });
-      this.flash('Ad-hoc session — nothing here touches your plan');
+      this.flash('Freestyle workout — nothing here touches your plan');
     };
-    out.openTodayRoutine = () => this.setState({ view: 'build', builder: this.clone(tr) });
+    out.openTodayRoutine = () => this.setState({ view: 'build', builder: this.clone(tr), bOrig: JSON.stringify(tr), nameErr: 0 });
     const LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const DSHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const MSHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -1249,10 +1397,11 @@ class Component extends DCLogic {
       const isToday = off === 0;
       const done = !isToday && off < 0 && (logged[key] || (off > -7 && st.week[wd] && st.week[wd].done));
       const isSel = off === (st.selOff || 0) && !isToday;
+      const isRest = !!(st.week[wd] && st.week[wd].restSet) && !done && !isToday && !isSel;
       strip.push({
         letter: LETTERS[wd], num: String(dt.getDate()),
-        isDone: !!done && !isSel, isToday: isToday, isSelected: isSel,
-        isPlain: !done && !isToday && !isSel,
+        isDone: !!done && !isSel, isToday: isToday, isSelected: isSel, isRest: isRest,
+        isPlain: !done && !isToday && !isSel && !isRest,
         todayFlag: isToday ? '1' : '0',
         month: MFULL[dt.getMonth()],
         onTap: () => this.setState({ selOff: off, switcher: false })
@@ -1264,7 +1413,12 @@ class Component extends DCLogic {
       this.stripEl = el;
       requestAnimationFrame(() => this.scrollStripToToday());
     };
-    out.statSessions = '1'; out.statSets = '16'; out.statVol = '8.4';
+    const wk = st.history.filter(h => (h.daysAgo === undefined ? 0 : h.daysAgo) <= ti);
+    out.statSessions = String(wk.length);
+    out.statSets = String(wk.reduce((a, h) => a + (parseInt(h.sets, 10) || 0), 0));
+    out.statVol = wk.length ? (wk.reduce((a, h) => a + (parseFloat(h.vol) || 0), 0)).toFixed(1) : '0';
+    out.noRoutines = st.routines.length === 0;
+    out.noHistory = st.history.length === 0;
 
     // ── plan ──
     out.schedTrain = String(st.week.filter(d => d.r).length);
@@ -1272,19 +1426,25 @@ class Component extends DCLogic {
     out.planRows = st.week.map((d, i) => {
       const r = d.r ? this.routine(d.r) : null;
       return {
-        day: d.d.toUpperCase(), name: r ? r.name : 'Rest day', sub: r ? r.items.length + ' exercises · ' + r.tag : 'Recovery, walk, stretch',
+        day: d.d.toUpperCase(),
+        name: r ? r.name : (d.restSet ? 'Rest day' : 'No routine added'),
+        sub: r ? r.items.length + ' exercises · ' + r.tag
+          : (d.restSet ? 'Recovery, walk, stretch' : 'Tap to set this day'),
         hasRoutine: !!r, isRest: !r, tw: d.tw, isToday: !d.tw && i === ti,
         onTap: () => this.setState({ sheet: 'day', dayEdit: { i: i, r: d.r, tw: d.tw } })
       };
     });
-    out.newRoutine = () => this.setState({ view: 'build', builder: { name: '', tag: 'Custom', items: [] }, from: null });
+    out.newRoutine = () => this.setState({ view: 'build', builder: { name: '', tag: 'Custom', items: [] }, bOrig: null, nameErr: 0, from: null });
 
     const gUnit = st.unit || 'KG';
     out.unitOptions = ['KG', 'LB'].map(u => ({
       label: u, on: gUnit === u, off: gUnit !== u,
       onTap: () => { this.setState({ unit: u }); this.flash('New exercises will default to ' + u.toLowerCase()); }
     }));
-    out.workCount = st.routines.length + (st.routines.length === 1 ? ' SAVED ROUTINE' : ' SAVED ROUTINES');
+    out.workCount = st.routines.length
+      ? st.routines.length + (st.routines.length === 1 ? ' SAVED ROUTINE' : ' SAVED ROUTINES')
+      : 'NO SAVED ROUTINES YET';
+
     const rd = st.rdrag;
     out.workoutCards = st.routines.map((r, ri) => ({
       name: r.name,
@@ -1292,8 +1452,12 @@ class Component extends DCLogic {
         + r.items.reduce((a, i) => a + i.sets, 0) + ' sets',
       dx: (rd && rd.i === ri ? Math.max(0, rd.dx) : 0) + 'px',
       dragTransition: rd && rd.i === ri && rd.moving ? 'none' : 'transform .22s cubic-bezier(.22,1,.36,1)',
-      killOpacity: rd && rd.i === ri ? Math.min(1, Math.max(0, rd.dx) / 80) : 0,
-      onTap: () => { if (this.rowDragged) { this.rowDragged = false; return; } this.setState({ view: 'build', builder: this.clone(r), from: null }); },
+      killOpacity: rd && rd.i === ri ? Math.min(1, Math.max(0, rd.dx) / 80) : (st.peek === 'routines' && ri === 0 ? 1 : 0),
+      killBg: rd && rd.i === ri && rd.dx > 110 ? '#FFDCD7' : '#FFECEA',
+      killLabel: rd && rd.i === ri && rd.dx > 110 ? 'RELEASE TO DELETE' : 'DELETE ROUTINE',
+      snapAnim: rd && rd.i === ri && rd.snapAt ? 'snapPulse .26s ease' : 'none',
+      peekAnim: st.peek === 'routines' && ri === 0 ? 'peekNudge 1.4s cubic-bezier(.22,1,.36,1)' : 'none',
+      onTap: () => { if (this.rowDragged) { this.rowDragged = false; return; } this.setState({ view: 'build', builder: this.clone(r), bOrig: JSON.stringify(r), nameErr: 0, from: null }); },
       onDragStart: e => {
         if (e.pointerType === 'mouse' && e.buttons !== 1) return;
         this.rowOrigin = { x: e.clientX, y: e.clientY, i: ri, active: false };
@@ -1307,7 +1471,9 @@ class Component extends DCLogic {
           o.active = true;
           if (e.currentTarget.setPointerCapture) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {} }
         }
-        this.setState({ rdrag: { i: ri, dx: dx, moving: true } });
+        const past = dx > 110;
+        const wasPast = !!(this.state.rdrag && this.state.rdrag.past);
+        this.setState({ rdrag: { i: ri, dx: dx, moving: true, past: past, snapAt: past && !wasPast ? Date.now() : (this.state.rdrag || {}).snapAt } });
       },
       onDragEnd: () => {
         const o = this.rowOrigin; this.rowOrigin = null;
@@ -1317,13 +1483,14 @@ class Component extends DCLogic {
         setTimeout(() => { this.rowDragged = false; }, 350);
         if (d.dx > 110) {
           this.setState({ rdrag: { i: ri, dx: 420, moving: false } });
+          const snapshot = { k: 'routine', i: ri, routine: this.clone(r), week: this.clone(this.state.week) };
           setTimeout(() => {
             this.setState(s => ({
               routines: s.routines.filter((x, k) => k !== ri),
-              week: s.week.map(w => (w.r === r.name ? Object.assign({}, w, { r: null }) : w)),
+              week: s.week.map(w => (w.r === r.name ? Object.assign({}, w, { r: null, restSet: false }) : w)),
               rdrag: null
             }));
-            this.flash(r.name + ' deleted');
+            this.flash(r.name + ' deleted', snapshot);
           }, 190);
         } else this.setState({ rdrag: { i: ri, dx: 0, moving: false } });
       }
@@ -1336,6 +1503,21 @@ class Component extends DCLogic {
       onTap: () => this.setState({ filter: g })
     }));
     out.onQuery = e => this.setState({ query: e.target.value });
+    out.query = st.query;
+    out.hasQuery = !!st.query;
+    out.searchRef = el => { if (el) this.searchEl = el; };
+    out.clearQuery = () => {
+      this.setState({ query: '' });
+      if (this.searchEl) this.searchEl.focus();
+    };
+    out.kbOpen = !!st.kbOpen;
+    out.onSearchFocus = () => this.setState({ kbOpen: true });
+    out.onSearchBlur = () => setTimeout(() => {
+      if (document.activeElement !== this.searchEl) this.setState({ kbOpen: false });
+    }, 120);
+    const tallSheet = st.sheet === 'pick' || st.sheet === 'swap';
+    out.sheetH = tallSheet ? (st.kbOpen ? 'calc(100% - 56px)' : '80%') : 'auto';
+    out.sheetMax = tallSheet ? 'none' : '80%';
     const q = st.query.trim().toLowerCase();
     const matches = this.DB.filter(x =>
       (st.filter === 'All' || x.g === st.filter) &&
@@ -1460,19 +1642,39 @@ class Component extends DCLogic {
       onRemove: () => self.setState(s => { const c = self.clone(s.builder); c.items.splice(i, 1); return { builder: c }; })
     })) : [];
     out.buildEmpty = !!(b && !b.items.length);
-    out.closeBuild = () => this.setState({ view: st.from || null, builder: null, from: null });
+    const bDirty = !!b && JSON.stringify({ name: b.name, tag: b.tag, items: b.items }) !== JSON.stringify(st.bOrig ? JSON.parse(st.bOrig) : { name: '', tag: 'Custom', items: [] });
+    const leaveBuild = () => this.setState({ view: st.from || null, builder: null, from: null, bOrig: null, buildAsk: false, nameErr: 0 });
+    out.closeBuild = () => (bDirty ? this.setState({ buildAsk: true }) : leaveBuild());
+    out.buildAsk = !!st.buildAsk;
+    out.buildAskLead = b && (b.name || '').trim()
+      ? 'Your edits to ' + b.name.trim() + ' have not been saved.'
+      : 'This routine has not been saved yet.';
+    out.cancelBuildExit = () => this.setState({ buildAsk: false });
+    out.confirmBuildExit = leaveBuild;
+    out.nameRef = el => { if (el) this.nameEl = el; };
+    out.nameMissing = !!st.nameErr && !(b && (b.name || '').trim());
+    out.nameLine = out.nameMissing ? '#B3311F' : 'rgba(20,22,26,0.135)';
+    out.nameAnim = st.nameErr ? (st.nameErr % 2 ? 'shakeA' : 'shakeB') + ' .42s cubic-bezier(.36,.07,.19,.97)' : 'none';
     out.saveBuild = () => {
       if (!b) return;
-      const name = (b.name || '').trim() || 'Untitled routine';
+      const name = (b.name || '').trim();
+      if (!name) {
+        this.setState(x => ({ nameErr: (x.nameErr || 0) + 1 }));
+        if (this.nameEl) this.nameEl.focus();
+        return;
+      }
       const rs = this.clone(st.routines);
       const at = rs.findIndex(r => r.name === name);
       const rec = { name: name, tag: b.tag || 'Custom', items: b.items };
       if (at >= 0) rs[at] = rec; else rs.push(rec);
-      this.setState({ routines: rs, view: st.from || null, builder: null, from: null });
+      this.setState({ routines: rs, view: st.from || null, builder: null, from: null, bOrig: null, nameErr: 0 });
       this.flash(at >= 0 ? name + ' updated' : name + ' saved to your routines');
     };
-    out.onBuildName = e => { const v = e.target.value; self.setState(s => { const c = self.clone(s.builder); c.name = v; return { builder: c }; }); };
-    out.openPicker = () => this.setState({ sheet: 'pick', pick: [], query: '', pickTarget: 'builder' });
+    out.onBuildName = e => {
+      const v = e.target.value;
+      self.setState(s => { const c = self.clone(s.builder); c.name = v; return { builder: c, nameErr: v.trim() ? 0 : s.nameErr }; });
+    };
+    out.openPicker = () => this.setState({ sheet: 'pick', pick: [], query: '', pickFilter: 'All', pickTarget: 'builder' });
 
     // ── active ──
     const s = st.session;
@@ -1514,7 +1716,7 @@ class Component extends DCLogic {
     out.resumeActive = () => this.setState({ view: 'active' });
     out.exitLead = s && s.routine
       ? 'Sets you have logged in ' + s.name + ' will not be saved.'
-      : 'Nothing from this ad-hoc session will be saved.';
+      : 'Nothing from this freestyle workout will be saved.';
     out.discardSession = () => this.setState({
       sheet: null, view: null, session: null, pad: null, restEnd: null,
       pausedAt: null, pauseAcc: 0, restLeftMs: 0, tab: 'today'
@@ -1591,7 +1793,11 @@ class Component extends DCLogic {
         i: String(j + 1), w: sv.w, r: sv.r, dim: pausedNow ? 0.4 : 1,
         dx: (st.drag && st.drag.i === i && st.drag.j === j ? Math.max(0, st.drag.dx) : 0) + 'px',
         dragTransition: st.drag && st.drag.i === i && st.drag.j === j && st.drag.moving ? 'none' : 'transform .22s cubic-bezier(.22,1,.36,1)',
-        killOpacity: st.drag && st.drag.i === i && st.drag.j === j ? Math.min(1, Math.max(0, st.drag.dx) / 70) : 0,
+        killOpacity: st.drag && st.drag.i === i && st.drag.j === j ? Math.min(1, Math.max(0, st.drag.dx) / 70) : (st.peek === 'sets' && i === 0 && j === 0 ? 1 : 0),
+        killBg: st.drag && st.drag.i === i && st.drag.j === j && st.drag.dx > 96 ? '#FFDCD7' : '#FFECEA',
+        killLabel: st.drag && st.drag.i === i && st.drag.j === j && st.drag.dx > 96 ? 'RELEASE' : 'DELETE SET',
+        snapAnim: st.drag && st.drag.i === i && st.drag.j === j && st.drag.snapAt ? 'snapPulse .26s ease' : 'none',
+        peekAnim: st.peek === 'sets' && i === 0 && j === 0 ? 'peekNudge 1.4s cubic-bezier(.22,1,.36,1)' : 'none',
         onDragStart: e => {
           if (e.pointerType === 'mouse' && e.buttons !== 1) return;
           this.dragOrigin = { x: e.clientX, y: e.clientY, i: i, j: j, active: false };
@@ -1605,7 +1811,9 @@ class Component extends DCLogic {
             o.active = true;
             if (e.currentTarget.setPointerCapture) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {} }
           }
-          this.setState({ drag: { i: i, j: j, dx: dx, moving: true } });
+          const past = dx > 96;
+          const wasPast = !!(this.state.drag && this.state.drag.past);
+          this.setState({ drag: { i: i, j: j, dx: dx, moving: true, past: past, snapAt: past && !wasPast ? Date.now() : (this.state.drag || {}).snapAt } });
         },
         onDragEnd: () => {
           const o = this.dragOrigin; this.dragOrigin = null;
@@ -1613,10 +1821,11 @@ class Component extends DCLogic {
           if (!o || !o.active || !d || d.i !== i || d.j !== j) { if (d) this.setState({ drag: null }); return; }
           if (d.dx > 96) {
             this.setState({ drag: { i: i, j: j, dx: 420, moving: false } });
+            const snap = { k: 'set', i: i, j: j, set: this.clone(sv) };
             setTimeout(() => {
               this.mut(x => { x.items[i].sets.splice(j, 1); });
               this.setState({ drag: null, pad: null });
-              this.flash('Set removed');
+              this.flash('Set removed', snap);
             }, 190);
           } else this.setState({ drag: { i: i, j: j, dx: 0, moving: false } });
         },
@@ -1633,7 +1842,7 @@ class Component extends DCLogic {
         }
       }))
     })) : [];
-    out.addExercise = () => this.setState({ sheet: 'pick', pick: [], query: '', pickTarget: 'session' });
+    out.addExercise = () => this.setState({ sheet: 'pick', pick: [], query: '', pickFilter: 'All', pickTarget: 'session' });
     out.minimize = () => this.setState({ view: null });
 
     // rest
@@ -1706,7 +1915,7 @@ class Component extends DCLogic {
 
     // ── sheets ──
     out.sheetOpen = !!st.sheet;
-    out.closeSheet = () => this.setState({ sheet: null, dayEdit: null, swapAt: null, detail: null });
+    out.closeSheet = () => this.setState({ sheet: null, dayEdit: null, swapAt: null, detail: null, kbOpen: false });
     out.shDay = st.sheet === 'day'; out.shPick = st.sheet === 'pick';
     out.shSwap = st.sheet === 'swap'; out.shDetail = st.sheet === 'detail';
     out.shExit = st.sheet === 'exit';
@@ -1715,37 +1924,54 @@ class Component extends DCLogic {
     const de = st.dayEdit;
     const FULLDAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
     out.dayTitle = de ? FULLDAY[st.week[de.i].d] || st.week[de.i].d : '';
-    out.dayOptions = de ? [{ name: 'Rest', sub: 'No session scheduled', r: null }].concat(
+    out.dayOptions = de ? [{ name: 'Rest', sub: 'Recovery day — no session scheduled', r: null }].concat(
       st.routines.map(r => ({ name: r.name, sub: r.items.length + ' exercises · ' + r.tag, r: r.name }))
     ).map(o => ({
-      name: o.name, sub: o.sub, on: de.r === o.r, off: de.r !== o.r,
+      name: o.name, sub: o.sub, on: de.r === o.r, off: de.r !== o.r, color: 'rgb(20,22,26)',
       onTap: () => self.setState({ dayEdit: Object.assign({}, de, { r: o.r }) })
-    })) : [];
+    })).concat([{
+      name: '+ New routine', sub: 'Build one and come back to this day', on: false, off: false, color: '#2F6BFF',
+      onTap: () => self.setState({
+        sheet: null, dayEdit: null, kbOpen: false,
+        view: 'build', from: null, bOrig: null, nameErr: 0,
+        builder: { name: '', tag: 'Custom', items: [] }
+      })
+    }]) : [];
     out.isEvery = de ? !de.tw : true; out.notEvery = de ? !!de.tw : false;
     out.isWeek = de ? !!de.tw : false; out.notWeek = de ? !de.tw : true;
     out.scopeEvery = () => self.setState({ dayEdit: Object.assign({}, de, { tw: false }) });
     out.scopeWeek = () => self.setState({ dayEdit: Object.assign({}, de, { tw: true }) });
     out.saveDay = () => {
       const w = self.clone(st.week);
-      w[de.i].r = de.r; w[de.i].tw = de.tw;
+      w[de.i].r = de.r; w[de.i].tw = de.tw; w[de.i].restSet = de.r === null;
       self.setState({ week: w, sheet: null, dayEdit: null });
       self.flash(de.tw ? w[de.i].d + ' changed for this week only' : w[de.i].d + ' updated in the weekly plan');
     };
 
-    const pickable = this.DB.filter(x => !q || x.n.toLowerCase().includes(q) || x.g.toLowerCase().includes(q));
+    const pf = st.pickFilter || 'All';
+    out.pickFilters = groups.map(g => ({
+      label: g, on: pf === g, off: pf !== g,
+      onTap: () => self.setState({ pickFilter: g })
+    }));
+    const pickable = this.DB.filter(x =>
+      (pf === 'All' || x.g === pf) &&
+      (!q || x.n.toLowerCase().includes(q) || x.g.toLowerCase().includes(q) || x.e.toLowerCase().includes(q)));
+    out.pickCount = pickable.length + ' of ' + this.DB.length + ' exercises';
     out.pickList = pickable.slice(0, 60).map(x => ({
-      n: x.n, meta: x.g + ' · ' + x.e,
+      n: x.n, meta: pf === 'All' ? x.g + ' · ' + x.e : x.e,
       picked: st.pick.includes(x.n), unpicked: !st.pick.includes(x.n),
       onTap: () => self.setState({ pick: st.pick.includes(x.n) ? st.pick.filter(p => p !== x.n) : st.pick.concat([x.n]) })
     }));
+    out.pickEmpty = pickable.length === 0;
+
     out.pickLabel = st.pick.length ? 'Add ' + st.pick.length : 'Done';
     out.confirmPick = () => {
-      if (!st.pick.length) { self.setState({ sheet: null }); return; }
+      if (!st.pick.length) { self.setState({ sheet: null, kbOpen: false }); return; }
       if (st.pickTarget === 'builder') {
         self.setState(s => {
           const c = self.clone(s.builder);
           st.pick.forEach(n => c.items.push({ n: n, sets: 3, reps: '10', w: 20, last: 'no history' }));
-          return { builder: c, sheet: null, pick: [], query: '' };
+          return { builder: c, sheet: null, pick: [], query: '', kbOpen: false };
         });
       } else {
         self.mut(x => {
@@ -1755,7 +1981,7 @@ class Component extends DCLogic {
             x.changes = x.changes.concat([{ t: n + ' — added, not in the routine', k: 'add', n: n }]);
           });
         });
-        self.setState({ sheet: null, pick: [], query: '' });
+        self.setState({ sheet: null, pick: [], query: '', kbOpen: false });
       }
     };
 
@@ -1780,7 +2006,7 @@ class Component extends DCLogic {
           y.items[sw].n = x.n; y.items[sw].last = 'no history';
           y.changes = y.changes.concat([{ t: from + ' → ' + x.n, k: 'swap', i: sw, from: from, to: x.n }]);
         });
-        self.setState({ sheet: null, swapAt: null });
+        self.setState({ sheet: null, swapAt: null, kbOpen: false });
       }
     })) : [];
 
@@ -1791,7 +2017,7 @@ class Component extends DCLogic {
     out.addFromDetail = () => {
       const c = self.clone(st.routines[0]);
       c.items.push({ n: d.n, sets: 3, reps: '10', w: 20, last: 'no history' });
-      self.setState({ sheet: null, detail: null, view: 'build', builder: c });
+      self.setState({ sheet: null, detail: null, view: 'build', builder: c, bOrig: JSON.stringify(st.routines[0]), nameErr: 0 });
     };
 
     return out;
@@ -1832,7 +2058,7 @@ class Component extends DCLogic {
       pausedAt: null, pauseAcc: 0, restLeftMs: 0,
       finished: { name: s.name, when: when, dur: mins + 'm', sets: String(doneSets), vol: vol ? String(Math.round(vol)) : '0', rows: rows },
       history: [{
-        name: s.name, date: when, dur: mins + 'm', sets: String(doneSets), vol: (vol / 1000).toFixed(1) + 't',
+        name: s.name, date: when, daysAgo: 0, dur: mins + 'm', sets: String(doneSets), vol: (vol / 1000).toFixed(1) + 't',
         start: new Date(s.start).toTimeString().slice(0, 5),
         ex: s.items.filter(i => i.sets.some(x => x.done)).map(i => ({
           n: i.n, sets: i.sets.filter(x => x.done).map(x => (x.w === '—' ? 'BW' : x.w) + ' × ' + x.r)

@@ -13,6 +13,8 @@ import { appSettings } from '../schema';
 export const SETTING_KEYS = {
   defaultWeightUnit: 'default_weight_unit',
   restSeconds: 'rest_seconds',
+  /** JSON snapshot of the workout in progress, so a restart cannot lose it. */
+  activeSession: 'active_session',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

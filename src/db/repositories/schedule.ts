@@ -7,7 +7,7 @@
 
 import { and, asc, eq, isNull } from 'drizzle-orm';
 
-import { resolveDayRoutineId, isOverridden, weekStartKey, type DayIndex } from '@/domain/week';
+import { resolveDayIsRest, resolveDayRoutineId, isOverridden, weekStartKey, type DayIndex } from '@/domain/week';
 import type { Db } from '../client';
 import { routines, scheduleDays } from '../schema';
 
@@ -20,6 +20,8 @@ export type ResolvedDay = {
   overridden: boolean;
   /** The saved weekly plan, ignoring any override. */
   savedRoutineId: string | null;
+  /** With no routine: true is a chosen rest day, false is a day never set. */
+  isRest: boolean;
 };
 
 /** All seven days, Mon first, with overrides resolved against `now`. */
@@ -44,6 +46,7 @@ export async function getWeek(db: Db, now = new Date()): Promise<ResolvedDay[]> 
       routineName: routineId ? (names.get(routineId) ?? null) : null,
       overridden: isOverridden(day, now),
       savedRoutineId: day.routineId,
+      isRest: resolveDayIsRest(day, now),
     };
   });
 }
@@ -60,11 +63,18 @@ export async function getToday(db: Db, now = new Date()): Promise<ResolvedDay | 
  * has just stated what the day should always be, so a leftover temporary change
  * would silently outrank it.
  */
-export async function setDayPlan(db: Db, dayIndex: DayIndex, routineId: string | null): Promise<void> {
+export async function setDayPlan(
+  db: Db,
+  dayIndex: DayIndex,
+  routineId: string | null,
+  /** True for a chosen rest day, false for a day cleared back to blank. */
+  isRest: boolean,
+): Promise<void> {
   await db
     .update(scheduleDays)
     .set({
       routineId,
+      isRest,
       overrideRoutineId: null,
       overrideIsRest: false,
       overrideWeekStart: null,
@@ -83,14 +93,16 @@ export async function setDayOverride(
   db: Db,
   dayIndex: DayIndex,
   routineId: string | null,
+  /** True for a chosen rest day, false for a day cleared back to blank. */
+  isRest: boolean,
   now = new Date(),
 ): Promise<void> {
   await db
     .update(scheduleDays)
     .set({
       overrideRoutineId: routineId,
-      // Distinguishes "this week, rest" from "no override at all".
-      overrideIsRest: routineId === null,
+      // Distinguishes "this week, rest" from "this week, nothing at all".
+      overrideIsRest: isRest,
       overrideWeekStart: weekStartKey(now),
       updatedAt: new Date(),
     })

@@ -25,6 +25,8 @@ export type RoutineItemWithExercise = {
   targetSets: number;
   targetReps: string;
   targetWeightKg: number | null;
+  /** Null on rows written before the unit was stored per item. */
+  weightUnit: string | null;
   restSeconds: number | null;
   exercise: Exercise;
 };
@@ -86,6 +88,7 @@ export async function getRoutineWithItems(db: Db, id: string): Promise<RoutineWi
       targetSets: item.targetSets,
       targetReps: item.targetReps,
       targetWeightKg: item.targetWeightKg,
+      weightUnit: item.weightUnit,
       restSeconds: item.restSeconds,
       exercise,
     })),
@@ -155,6 +158,7 @@ export async function upsertRoutine(
           targetSets: item.sets,
           targetReps: item.reps,
           targetWeightKg: item.weightKg,
+          weightUnit: item.unit ?? null,
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);

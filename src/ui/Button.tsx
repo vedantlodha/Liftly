@@ -8,7 +8,7 @@ export type ButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   /**
    * `primary` — the blue CTA (Start workout, Save, Finish and save).
    * `secondary` — neutral fill (Keep going, Just today).
-   * `outline` — white with a hairline border (Start an ad-hoc workout).
+   * `outline` — white with a hairline border (Freestyle workout).
    * `danger` — destructive (Discard workout, Exit and discard).
    * `dashed` — the "+ Add exercise" affordance.
    */

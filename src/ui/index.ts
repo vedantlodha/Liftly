@@ -1,6 +1,8 @@
 export { AnchoredMenu, useAnchor, type AnchorRect } from './AnchoredMenu';
 export { Button, type ButtonProps } from './Button';
 export { Card, CardRow, RowDivider, type CardProps } from './Card';
+export { ConfirmDialog, type ConfirmDialogProps, type DialogAction } from './ConfirmDialog';
+export { EmptyState, ListGlyph, type EmptyStateProps } from './EmptyState';
 export { CARET, Chevron, type ChevronProps } from './Chevron';
 export { Pill, type PillProps } from './Pill';
 export { Screen, ScreenHeader, SubScreenBar } from './Screen';

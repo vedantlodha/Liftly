@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -22,9 +23,9 @@ export default function ScheduleScreen() {
 
   const trainingDays = resolved.filter((d) => d.routineId).length;
 
-  const save = (day: DayIndex, routineId: string | null, scope: DaySaveScope) => {
-    if (scope === 'thisWeek') setOverride(day, routineId);
-    else setPlan(day, routineId);
+  const save = (day: DayIndex, routineId: string | null, isRest: boolean, scope: DaySaveScope) => {
+    if (scope === 'thisWeek') setOverride(day, routineId, isRest);
+    else setPlan(day, routineId, isRest);
     setEditing(null);
     toast(
       scope === 'thisWeek'
@@ -96,10 +97,14 @@ export default function ScheduleScreen() {
 
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={{ fontFamily: font.medium, fontSize: 15, letterSpacing: -0.15, color: ink.primary }}>
-                    {routine ? routine.name : 'Rest day'}
+                    {routine ? routine.name : day.isRest ? 'Rest day' : 'No routine added'}
                   </Text>
                   <Text style={{ fontFamily: font.regular, fontSize: 11.5, color: ink.strip, marginTop: 3 }}>
-                    {routine ? `${routine.items.length} exercises · ${routine.tag}` : 'Recovery, walk, stretch'}
+                    {routine
+                      ? `${routine.items.length} exercises · ${routine.tag}`
+                      : day.isRest
+                        ? 'Recovery, walk, stretch'
+                        : 'Tap to set this day'}
                   </Text>
                 </View>
 
@@ -140,10 +145,18 @@ export default function ScheduleScreen() {
         <DayEditSheet
           day={editing}
           current={editingDay.routineId}
+          currentIsRest={editingDay.isRest}
           overridden={editingDay.overridden}
           routines={routines}
           onDismiss={() => setEditing(null)}
-          onSave={(routineId, scope) => save(editing, routineId, scope)}
+          onCreate={() => {
+            // The day is handed to the builder, which assigns the routine it
+            // saves — "come back to this day" without the coming back.
+            const day = editing;
+            setEditing(null);
+            router.push(`/routine/new?day=${day}&scope=plan`);
+          }}
+          onSave={(routineId, isRest, scope) => save(editing, routineId, isRest, scope)}
         />
       )}
     </Screen>

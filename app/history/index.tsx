@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { exerciseSummary, useHistory } from '@/stores/useHistory';
 import { border, color, font, ink, radius, space } from '@/theme/tokens';
-import { Card, Screen, Scroll, SubScreenBar, Text } from '@/ui';
+import { Card, EmptyState, Screen, Scroll, SubScreenBar, Text } from '@/ui';
 
 export default function HistoryScreen() {
   const sessions = useHistory((s) => s.sessions);
@@ -27,6 +27,13 @@ export default function HistoryScreen() {
         contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: 20, paddingBottom: 34, gap: 8 }}
         showsVerticalScrollIndicator={false}
       >
+        {sessions.length === 0 && (
+          <EmptyState
+            title="Nothing logged yet"
+            message="Finish a workout and it will show up here with every set you logged."
+          />
+        )}
+
         {sessions.map((session) => (
           <Pressable
             key={session.id}

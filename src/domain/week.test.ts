@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  resolveDayIsRest,
   addDays,
   dayIndex,
   isOverrideActive,
@@ -71,9 +72,38 @@ describe('isOverrideActive', () => {
   });
 });
 
+describe('resolveDayIsRest', () => {
+  const friday = at(2026, 8, 14);
+  const plan = (over: Partial<SchedulableDay> = {}): SchedulableDay => ({
+    routineId: null,
+    isRest: false,
+    overrideRoutineId: null,
+    overrideIsRest: false,
+    overrideWeekStart: null,
+    ...over,
+  });
+
+  it('separates a chosen rest day from a day never configured', () => {
+    assert.equal(resolveDayIsRest(plan({ isRest: true }), friday), true);
+    assert.equal(resolveDayIsRest(plan(), friday), false);
+  });
+
+  it('lets this week’s override decide', () => {
+    // Saved plan says rest, but this week the day was given a routine.
+    const day = plan({ isRest: true, overrideRoutineId: 'push-a', overrideWeekStart: '2026-08-10' });
+    assert.equal(resolveDayIsRest(day, friday), false);
+  });
+
+  it('falls back to the saved plan once the override lapses', () => {
+    const day = plan({ isRest: true, overrideRoutineId: 'push-a', overrideWeekStart: '2026-08-03' });
+    assert.equal(resolveDayIsRest(day, friday), true);
+  });
+});
+
 describe('resolveDayRoutineId', () => {
   const plan = (over: Partial<SchedulableDay> = {}): SchedulableDay => ({
     routineId: 'saved-legs',
+    isRest: false,
     overrideRoutineId: null,
     overrideIsRest: false,
     overrideWeekStart: null,

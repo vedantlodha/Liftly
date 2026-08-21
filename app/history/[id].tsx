@@ -2,11 +2,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { ConfirmDialog } from '@/features/session/ConfirmDialog';
 import { useHistory } from '@/stores/useHistory';
 import { toast } from '@/stores/useToast';
 import { border, color, font, ink, radius, space } from '@/theme/tokens';
-import { Card, Chevron, Screen, Scroll, Stat, StatRow, Text } from '@/ui';
+import { Card, Chevron, ConfirmDialog, Screen, Scroll, Stat, StatRow, Text } from '@/ui';
 
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

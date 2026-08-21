@@ -15,6 +15,20 @@
       "when": 1786709877681,
       "tag": "0001_public_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786728029502,
+      "tag": "0002_dazzling_baron_strucker",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786802044714,
+      "tag": "0003_smooth_layla_miller",
+      "breakpoints": true
     }
   ]
 }

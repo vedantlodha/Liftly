@@ -2,7 +2,14 @@ import { create } from 'zustand';
 
 import { PREFILL_DEMO_DATA } from '@/config';
 import { WEEK } from '@/data/seed';
-import { isOverridden, resolveDayRoutineId, weekStartKey, type DayIndex, type SchedulableDay } from '@/domain/week';
+import {
+  isOverridden,
+  resolveDayIsRest,
+  resolveDayRoutineId,
+  weekStartKey,
+  type DayIndex,
+  type SchedulableDay,
+} from '@/domain/week';
 import { persist } from '@/db/persistence';
 import { getRoutineByName } from '@/db/repositories/routines';
 import { setDayOverride, setDayPlan } from '@/db/repositories/schedule';
@@ -23,8 +30,10 @@ export type ScheduleEntry = SchedulableDay & { dayIndex: DayIndex };
 
 export type ResolvedDay = {
   dayIndex: DayIndex;
-  /** What this day is right now, override included. `null` is a rest day. */
+  /** What this day is right now, override included. `null` means no routine. */
   routineId: string | null;
+  /** With no routine: true is a chosen rest day, false is a day never set. */
+  isRest: boolean;
   /** True while a this-week-only change applies. */
   overridden: boolean;
 };
@@ -32,9 +41,9 @@ export type ResolvedDay = {
 type ScheduleState = {
   days: ScheduleEntry[];
   /** Replaces the saved plan and clears any override on that day. */
-  setPlan: (day: DayIndex, routineId: string | null) => void;
+  setPlan: (day: DayIndex, routineId: string | null, isRest: boolean) => void;
   /** Changes a day for the current week only. */
-  setOverride: (day: DayIndex, routineId: string | null, now?: Date) => void;
+  setOverride: (day: DayIndex, routineId: string | null, isRest: boolean, now?: Date) => void;
 };
 
 /**
@@ -45,6 +54,9 @@ type ScheduleState = {
 const initial: ScheduleEntry[] = Array.from({ length: 7 }, (_, i) => ({
   dayIndex: i as DayIndex,
   routineId: PREFILL_DEMO_DATA ? (WEEK[i]?.routine ?? null) : null,
+  // The demo plan's empty days are a deliberate five-day split; a real install
+  // starts with nothing configured at all, which reads differently.
+  isRest: PREFILL_DEMO_DATA && !WEEK[i]?.routine,
   overrideRoutineId: null,
   overrideIsRest: false,
   overrideWeekStart: null,
@@ -53,10 +65,10 @@ const initial: ScheduleEntry[] = Array.from({ length: 7 }, (_, i) => ({
 export const useSchedule = create<ScheduleState>((set) => ({
   days: initial,
 
-  setPlan: (day, routineId) => {
+  setPlan: (day, routineId, isRest) => {
     persist(async (db) => {
       const routine = routineId ? await getRoutineByName(db, routineId) : null;
-      await setDayPlan(db, day, routine?.id ?? null);
+      await setDayPlan(db, day, routine?.id ?? null, isRest);
     });
     set((s) => ({
       days: s.days.map((d) =>
@@ -65,6 +77,9 @@ export const useSchedule = create<ScheduleState>((set) => ({
           : {
               ...d,
               routineId,
+              // Rest is a decision; blank is the absence of one, and they are
+              // told apart here rather than inferred from a null routine.
+              isRest,
               // A permanent change outranks a leftover temporary one, which
               // would otherwise silently keep winning.
               overrideRoutineId: null,
@@ -75,10 +90,10 @@ export const useSchedule = create<ScheduleState>((set) => ({
     }));
   },
 
-  setOverride: (day, routineId, now = new Date()) => {
+  setOverride: (day, routineId, isRest, now = new Date()) => {
     persist(async (db) => {
       const routine = routineId ? await getRoutineByName(db, routineId) : null;
-      await setDayOverride(db, day, routine?.id ?? null, now);
+      await setDayOverride(db, day, routine?.id ?? null, isRest, now);
     });
     set((s) => ({
       days: s.days.map((d) =>
@@ -87,8 +102,8 @@ export const useSchedule = create<ScheduleState>((set) => ({
           : {
               ...d,
               overrideRoutineId: routineId,
-              // Distinguishes "this week, rest" from "no override at all".
-              overrideIsRest: routineId === null,
+              // Distinguishes "this week, rest" from "this week, nothing".
+              overrideIsRest: isRest,
               // The stamp is what makes the change lapse on its own.
               overrideWeekStart: weekStartKey(now),
             },
@@ -102,6 +117,7 @@ export function resolveWeek(days: readonly ScheduleEntry[], now: Date): Resolved
   return days.map((d) => ({
     dayIndex: d.dayIndex,
     routineId: resolveDayRoutineId(d, now),
+    isRest: resolveDayIsRest(d, now),
     overridden: isOverridden(d, now),
   }));
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `schedule_days` ADD `is_rest` integer DEFAULT false NOT NULL;

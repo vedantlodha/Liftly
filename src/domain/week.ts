@@ -49,6 +49,8 @@ export function isOverrideActive(overrideWeekStart: string | null | undefined, n
 /** Just the fields of a schedule row this rule needs. */
 export type SchedulableDay = {
   routineId: string | null;
+  /** True when the saved plan deliberately makes this a rest day. */
+  isRest: boolean;
   overrideRoutineId: string | null;
   overrideIsRest: boolean;
   overrideWeekStart: string | null;
@@ -66,6 +68,18 @@ export function resolveDayRoutineId(day: SchedulableDay, now: Date): string | nu
     return day.overrideIsRest ? null : day.overrideRoutineId;
   }
   return day.routineId;
+}
+
+/**
+ * Whether a day with no routine is one the user chose to rest on.
+ *
+ * A day can be empty for two different reasons — "recovery day" or "never got
+ * round to it" — and the app says something different for each. Only meaningful
+ * when `resolveDayRoutineId` returns null.
+ */
+export function resolveDayIsRest(day: SchedulableDay, now: Date): boolean {
+  if (isOverrideActive(day.overrideWeekStart, now)) return day.overrideIsRest;
+  return day.isRest;
 }
 
 /** True when the day is showing a this-week-only change — drives the THIS WK badge. */

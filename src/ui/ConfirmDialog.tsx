@@ -1,7 +1,7 @@
 import { Pressable, View } from 'react-native';
 
 import { color, font, ink, radius } from '@/theme/tokens';
-import { Text } from '@/ui';
+import { Text } from './Text';
 
 export type DialogAction = {
   label: string;
@@ -21,10 +21,11 @@ export type ConfirmDialogProps = {
 const HEIGHT = { primary: 52, neutral: 48, danger: 50, quiet: 46 } as const;
 
 /**
- * Centred modal used for the finish and leave decisions.
+ * Centred modal for decisions that can destroy work.
  *
- * These are deliberately dialogs rather than sheets: both can lose logged sets,
- * so the choice should interrupt rather than sit at the edge of the screen.
+ * Deliberately a dialog rather than a sheet: finishing a session, leaving one,
+ * and discarding routine edits can all lose what the user just did, so the
+ * choice should interrupt rather than sit at the edge of the screen.
  */
 export function ConfirmDialog({ title, message, actions, onDismiss }: ConfirmDialogProps) {
   return (

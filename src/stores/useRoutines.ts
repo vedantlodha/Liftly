@@ -18,6 +18,8 @@ type RoutinesState = {
   routines: Routine[];
   save: (routine: Routine, originalName?: string) => void;
   remove: (name: string) => void;
+  /** Puts a deleted routine back at its old position, for undo. */
+  restore: (routine: Routine, index: number) => void;
 };
 
 export const useRoutines = create<RoutinesState>((set) => ({
@@ -43,6 +45,7 @@ export const useRoutines = create<RoutinesState>((set) => ({
             sets: i.sets,
             reps: i.reps,
             weightKg: i.weight || null,
+            unit: i.unit,
           })),
         },
         originalName,
@@ -56,6 +59,30 @@ export const useRoutines = create<RoutinesState>((set) => ({
       const found = await getRoutineByName(db, name);
       if (found) await deleteRoutine(db, found.id);
     });
+  },
+
+  restore: (routine, index) => {
+    set((s) => {
+      const routines = [...s.routines];
+      // Clamped: the list may have changed while the undo toast was up.
+      routines.splice(Math.min(index, routines.length), 0, routine);
+      return { routines };
+    });
+    // Re-saved rather than un-tombstoned: deleteRoutine stamps deletedAt, and
+    // upsert writes a live row back under the same name.
+    persist((db) =>
+      upsertRoutine(db, newId, {
+        name: routine.name,
+        tag: routine.tag,
+        items: routine.items.map((i) => ({
+          exerciseName: i.name,
+          sets: i.sets,
+          reps: i.reps,
+          weightKg: i.weight || null,
+          unit: i.unit,
+        })),
+      }),
+    );
   },
 }));
 

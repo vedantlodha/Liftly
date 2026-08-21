@@ -1,15 +1,15 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView } from 'react-native';
 
-import { LOGGED_DATES, WEEK, todayIndex } from '@/data/seed';
+import { logKeyFor } from '@/domain/dayView';
+import { dayIndex } from '@/domain/week';
+import { useHistory } from '@/stores/useHistory';
 import { border, color, font, ink, space } from '@/theme/tokens';
 import { Scroll, Text } from '@/ui';
 
 const CELL = 54;
 const GAP = 7;
 const LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const DSHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MSHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MFULL = [
   'JANUARY',
   'FEBRUARY',
@@ -31,25 +31,33 @@ type Cell = {
   letter: string;
   num: string;
   done: boolean;
+  /** The weekly plan marks this weekday as rest. */
+  rest: boolean;
   month: string;
 };
 
-/** Two weeks back through the end of the current week, exactly as the prototype builds it. */
-function buildStrip(now: Date): Cell[] {
-  const ti = todayIndex(now);
-  const logged = new Set(LOGGED_DATES);
+/**
+ * Two weeks back through the end of the current week, exactly as the prototype
+ * builds it.
+ *
+ * A day is ticked only when the log actually holds a session for it. This used
+ * to read the demo constants, which meant a blank install still claimed a
+ * finished workout on Monday.
+ */
+function buildStrip(now: Date, loggedDates: ReadonlySet<string>, restDays: ReadonlySet<number>): Cell[] {
+  const ti = dayIndex(now);
   const cells: Cell[] = [];
 
   for (let off = -14; off <= 6 - ti; off++) {
     const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + off);
     const wd = (dt.getDay() + 6) % 7;
-    const key = `${DSHORT[dt.getDay()]} ${dt.getDate()} ${MSHORT[dt.getMonth()]}`;
 
     cells.push({
       offset: off,
       letter: LETTERS[wd] ?? '',
       num: String(dt.getDate()),
-      done: off < 0 && (logged.has(key) || (off > -7 && !!WEEK[wd]?.done)),
+      done: off < 0 && loggedDates.has(logKeyFor(dt)),
+      rest: restDays.has(wd),
       month: MFULL[dt.getMonth()] ?? '',
     });
   }
@@ -60,10 +68,18 @@ export type WeekStripProps = {
   /** Days from today. The parent owns it, because the card below reflects it. */
   selectedOffset: number;
   onSelect: (offset: number) => void;
+  /** Weekday indices the user deliberately set to rest, Monday-first. */
+  restDays: ReadonlySet<number>;
 };
 
-export function WeekStrip({ selectedOffset, onSelect }: WeekStripProps) {
-  const cells = useRef(buildStrip(new Date())).current;
+export function WeekStrip({ selectedOffset, onSelect, restDays }: WeekStripProps) {
+  const log = useHistory((s) => s.sessions);
+  // Rebuilt when the log changes, so finishing a workout ticks today's cell.
+  const today = useRef(new Date()).current;
+  const cells = useMemo(
+    () => buildStrip(today, new Set(log.map((s) => s.date)), restDays),
+    [today, log, restDays],
+  );
   const scroller = useRef<ScrollView>(null);
   const [width, setWidth] = useState(0);
   const todayAt = cells.findIndex((c) => c.offset === 0);
@@ -125,7 +141,17 @@ export function WeekStrip({ selectedOffset, onSelect }: WeekStripProps) {
       >
         {cells.map((c) => {
           // Selected beats done, so the dark pill is never hidden by a tick.
-          const state = c.offset === selectedOffset && c.offset !== 0 ? 'selected' : c.offset === 0 ? 'today' : c.done ? 'done' : 'plain';
+          // A logged workout outranks the plan, and the selection outranks both.
+          const state =
+            c.offset === selectedOffset && c.offset !== 0
+              ? 'selected'
+              : c.offset === 0
+                ? 'today'
+                : c.done
+                  ? 'done'
+                  : c.rest
+                    ? 'rest'
+                    : 'plain';
           return (
             <Pressable
               key={c.offset}
@@ -146,7 +172,7 @@ export function WeekStrip({ selectedOffset, onSelect }: WeekStripProps) {
               >
                 <Text
                   style={{
-                    fontFamily: state === 'plain' ? font.medium : font.semibold,
+                    fontFamily: state === 'plain' || state === 'rest' ? font.medium : font.semibold,
                     fontSize: state === 'done' ? 13 : 11,
                     color: LABEL_COLOR[state],
                   }}
@@ -166,6 +192,7 @@ const CELL_STYLE = {
   done: { backgroundColor: color.accent },
   today: { backgroundColor: color.accentBg, borderWidth: 1.5, borderColor: color.accent },
   selected: { backgroundColor: color.inverseSurface },
+  rest: { backgroundColor: color.restBg, borderWidth: 1, borderColor: color.restBorder },
   plain: { backgroundColor: color.surface, borderWidth: 1, borderColor: border.tile },
 } as const;
 
@@ -173,5 +200,6 @@ const LABEL_COLOR = {
   done: color.onAccent,
   today: color.accent,
   selected: color.onInverse,
+  rest: color.restInk,
   plain: ink.muted,
 } as const;

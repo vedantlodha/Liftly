@@ -10,6 +10,7 @@ import {
   searchExercises,
   type CatalogExercise,
 } from '@/features/library/catalog';
+import { FilterChips } from '@/features/library/FilterChips';
 import { SearchField } from '@/features/library/SearchField';
 import { border, color, font, ink, radius, space } from '@/theme/tokens';
 import { Chevron, Screen, Scroll, SubScreenBar, Text } from '@/ui';
@@ -31,38 +32,7 @@ export default function LibraryScreen() {
           <SearchField value={query} onChangeText={setQuery} />
         </View>
 
-        <Scroll
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 7, paddingTop: 14, paddingBottom: 12 }}
-        >
-          {FILTER_GROUPS.map((g) => {
-            const on = filter === g.value;
-            return (
-              <Pressable
-                key={g.value}
-                accessibilityRole="button"
-                accessibilityLabel={`Filter ${g.label}`}
-                aria-selected={on}
-                onPress={() => setFilter(g.value)}
-                style={{
-                  paddingHorizontal: 13,
-                  paddingVertical: 7,
-                  borderRadius: radius.pill,
-                  backgroundColor: on ? color.accent : color.surface,
-                  borderWidth: 1,
-                  borderColor: on ? color.accent : border.avatar,
-                }}
-              >
-                <Text
-                  style={{ fontFamily: font.medium, fontSize: 12, color: on ? color.onAccent : ink.action }}
-                >
-                  {g.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </Scroll>
+        <FilterChips value={filter} onChange={setFilter} />
       </View>
 
       <Scroll

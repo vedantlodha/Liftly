@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { buildDayView, type DayView } from '@/domain/dayView';
@@ -47,6 +47,10 @@ export default function TodayScreen() {
   const today = resolved.find((d) => d.dayIndex === ti);
 
   const totals = weekTotals(log, now);
+  const restDays = useMemo(
+    () => new Set(resolved.filter((d) => !d.routineId && d.isRest).map((d) => d.dayIndex)),
+    [resolved],
+  );
 
   const upcoming = resolved.slice(ti + 1).concat(resolved).find((d) => d.routineId);
   const nextUp = upcoming ? `${upcoming.routineId} on ${DAY_NAMES[upcoming.dayIndex]}` : 'nothing';
@@ -61,13 +65,17 @@ export default function TodayScreen() {
     scheduled: findRoutineIn(routines, scheduled?.routineId),
     log,
     nextUp,
+    isRest: scheduled?.isRest ?? false,
+    hasRoutines: routines.length > 0,
   });
 
   // Swapping from Today is always a this-week change — the design's switcher
   // never edits the saved plan.
   const setDay = (name: string | null) => {
     if (name === today?.routineId) return;
-    setOverride(ti, name);
+    // Picking Rest from the switcher is deliberate, so it is a rest day
+    // rather than a cleared one.
+    setOverride(ti, name, name === null);
     toast(name ? `Today swapped to ${name} — this week only` : 'Today set to rest — this week only');
   };
 
@@ -80,7 +88,7 @@ export default function TodayScreen() {
       return;
     }
     router.push(name ? `/session/active?routine=${encodeURIComponent(name)}` : '/session/active');
-    if (!name) toast('Ad-hoc session — nothing here touches your plan');
+    if (!name) toast('Freestyle workout — nothing here touches your plan');
   };
 
   return (
@@ -125,6 +133,7 @@ export default function TodayScreen() {
         )}
 
         <WeekStrip
+          restDays={restDays}
           selectedOffset={selected}
           onSelect={(offset) => {
             setSelected(offset);
@@ -140,8 +149,10 @@ export default function TodayScreen() {
             onToggleSwitcher={() => setSwitcherOpen((v) => !v)}
             onCloseSwitcher={() => setSwitcherOpen(false)}
             onPickRoutine={setDay}
+            onCreateRoutine={() => router.push(`/routine/new?day=${ti}&scope=week`)}
             onEdit={() => router.push(`/routine/${encodeURIComponent(day.title)}`)}
             onStart={() => startSession(day.title)}
+            sessionOpen={session != null}
           />
         ) : (
           <RestDayCard
@@ -151,13 +162,18 @@ export default function TodayScreen() {
             onToggleSwitcher={() => setSwitcherOpen((v) => !v)}
             onCloseSwitcher={() => setSwitcherOpen(false)}
             onPickRoutine={setDay}
+            onCreateRoutine={() => router.push(`/routine/new?day=${ti}&scope=week`)}
           />
         )}
 
-        {/* Starting an ad-hoc workout only makes sense on the day you are on. */}
+        {/*
+          The way to train something that is not the plan — and, once the day's
+          workout is logged, the way to train again. Only offered on the day you
+          are actually on.
+        */}
         {day.isToday && (
           <Button
-            label="Start an ad-hoc workout"
+            label={session ? 'Resume workout' : 'Add new workout'}
             tone="outline"
             size="md"
             onPress={() => startSession()}
@@ -228,6 +244,7 @@ function RestDayCard({
   onToggleSwitcher,
   onCloseSwitcher,
   onPickRoutine,
+  onCreateRoutine,
 }: {
   day: DayView;
   routines: Routine[];
@@ -235,6 +252,7 @@ function RestDayCard({
   onToggleSwitcher: () => void;
   onCloseSwitcher: () => void;
   onPickRoutine: (name: string | null) => void;
+  onCreateRoutine: () => void;
 }) {
   const anchor = useAnchor();
   return (
@@ -277,6 +295,10 @@ function RestDayCard({
             current={null}
             anchor={anchor.rect}
             onDismiss={onCloseSwitcher}
+            onCreate={() => {
+              onCloseSwitcher();
+              onCreateRoutine();
+            }}
             onPick={(name) => {
               onPickRoutine(name);
               onCloseSwitcher();

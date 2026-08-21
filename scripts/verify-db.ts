@@ -101,6 +101,17 @@ check(
   SEED_EXERCISES.reduce((a, e) => a + e.params.length, 0),
 );
 
+// A day can be a chosen rest day or simply blank, and the two must survive the
+// round trip as different things. Needs no demo data — only the schedule grid,
+// which always exists.
+console.log('\nschedule — rest versus blank');
+const anyFriday = new Date(2026, 7, 14);
+await setDayPlan(db, 5, null, true);
+check('rest day stores its intent', (await getWeek(db, anyFriday))[5]?.isRest, true);
+await setDayPlan(db, 5, null, false);
+check('a cleared day is not a rest day', (await getWeek(db, anyFriday))[5]?.isRest, false);
+check('a cleared day has no routine', (await getWeek(db, anyFriday))[5]?.routineName, null);
+
 // Everything below reads the demo routines, so it only applies when they exist.
 if (!PREFILL_DEMO_DATA) {
   console.log('\nskipping routine + override checks — PREFILL_DEMO_DATA is off');
@@ -158,7 +169,7 @@ check('nothing overridden yet', week.filter((d) => d.overridden).length, 0);
 // ── the override rule, end to end ────────────────────────────
 console.log('\nthis-week override');
 const legsId = legs!.id;
-await setDayOverride(db, 4, legsId, friday);
+await setDayOverride(db, 4, legsId, false, friday);
 const overridden = await getToday(db, friday);
 check('Fri now resolves to the override', overridden?.routineName, 'Legs');
 check('Fri is flagged as overridden', overridden?.overridden, true);
@@ -172,8 +183,8 @@ check('override lapses next week', later?.routineName, 'Push B');
 check('badge clears next week', later?.overridden, false);
 
 // A permanent change must also clear any lingering override.
-await setDayOverride(db, 4, legsId, friday);
-await setDayPlan(db, 4, legsId);
+await setDayOverride(db, 4, legsId, false, friday);
+await setDayPlan(db, 4, legsId, false);
 const afterPlan = await getToday(db, friday);
 check('setDayPlan wins over an override', afterPlan?.routineName, 'Legs');
 check('setDayPlan clears the override flag', afterPlan?.overridden, false);

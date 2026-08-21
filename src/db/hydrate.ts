@@ -18,6 +18,7 @@ import { listSessions } from './repositories/sessions';
 import { getRoutineWithItems, listRoutines } from './repositories/routines';
 import { getWeek } from './repositories/schedule';
 import { getAllSettings, SETTING_KEYS } from './repositories/settings';
+import { restoreActiveSession } from './activeSession';
 
 /** kg is the fallback when nothing has been stored yet. */
 function toUnit(value: string | undefined): WeightUnit {
@@ -58,6 +59,8 @@ export async function hydrateStores(db: Db): Promise<void> {
         sets: item.targetSets,
         reps: item.targetReps,
         weight: item.targetWeightKg ?? 0,
+        // Stored per item, so changing the default later leaves this alone.
+        unit: toUnit(item.weightUnit ?? undefined),
         last: 'no history',
       })),
     });
@@ -72,6 +75,7 @@ export async function hydrateStores(db: Db): Promise<void> {
     days: week.map((day) => ({
       dayIndex: day.dayIndex as DayIndex,
       routineId: day.savedRoutineId ? (nameById.get(day.savedRoutineId) ?? null) : null,
+      isRest: day.isRest,
       overrideRoutineId: day.overridden && day.routineId ? (nameById.get(day.routineId) ?? null) : null,
       overrideIsRest: day.overridden && day.routineId === null,
       overrideWeekStart: day.overridden ? weekStartOfToday() : null,
@@ -99,6 +103,9 @@ export async function hydrateStores(db: Db): Promise<void> {
     };
   });
   useHistory.setState({ sessions });
+
+  // Last, so a restored workout sees the routines and history it refers to.
+  await restoreActiveSession(db);
 }
 
 /** Local Monday, matching `domain/week`'s stamp format. */

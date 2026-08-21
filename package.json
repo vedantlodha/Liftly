@@ -49,7 +49,10 @@
     "catalog:check": "node --experimental-strip-types --no-warnings scripts/check-catalog.ts",
     "catalog:build": "node --experimental-strip-types --no-warnings scripts/build-catalog.ts",
     "db:verify": "node --experimental-strip-types --experimental-sqlite --no-warnings --import ./scripts/register-hooks.mjs scripts/verify-db.ts",
-    "test": "node --test --experimental-strip-types --no-warnings --import ./scripts/register-hooks.mjs \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types --no-warnings --import ./scripts/register-hooks.mjs \"src/**/*.test.ts\"",
+    "android:install": "bash scripts/install-android.sh",
+    "apk": "bash scripts/build-apk.sh",
+    "icons": "node --experimental-strip-types --no-warnings scripts/build-icons.ts"
   },
   "private": true
 }

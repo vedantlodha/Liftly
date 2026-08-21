@@ -1,6 +1,7 @@
-import { TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 
-import { border, color, ink, radius } from '@/theme/tokens';
+import { border, color, font, ink, radius } from '@/theme/tokens';
+import { Text } from '@/ui';
 
 export type SearchFieldProps = {
   value: string;
@@ -23,7 +24,7 @@ export function SearchField({ value, onChangeText, placeholder = 'Search exercis
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 14,
         height: onPage ? 44 : 42,
         borderRadius: radius.xl,
         paddingHorizontal: 14,
@@ -56,6 +57,26 @@ export function SearchField({ value, onChangeText, placeholder = 'Search exercis
           color: ink.primary,
         }}
       />
+
+      {/* Only once there is something to clear, so the field stays quiet when empty. */}
+      {value.length > 0 && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          onPress={() => onChangeText('')}
+          hitSlop={10}
+          style={({ pressed }) => ({
+            width: 18,
+            height: 18,
+            borderRadius: radius.pill,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: pressed ? border.dashedStrong : border.check,
+          })}
+        >
+          <Text style={{ fontFamily: font.medium, fontSize: 11, lineHeight: 13, color: color.surface }}>×</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

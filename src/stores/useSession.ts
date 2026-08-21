@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+import { moveItem } from '@/domain/reorder';
+import { lastPerformed } from '@/domain/lastPerformed';
+import { fillDown } from '@/domain/sets';
 import { summariseSession, type SessionSummary } from '@/domain/volume';
 import { useHistory } from './useHistory';
 import { newId } from '@/db/id';
@@ -34,6 +37,13 @@ export type SessionSet = {
   weight: string;
   reps: string;
   done: boolean;
+  /**
+   * True once the user has typed into this set.
+   *
+   * Completing a set copies its values down the exercise, and this is what
+   * stops that from wiping a set the user already filled in by hand.
+   */
+  touched?: boolean;
 };
 
 export type SessionItem = {
@@ -45,8 +55,9 @@ export type SessionItem = {
   planSets: number;
   planWeight: number;
   /**
-   * Unit this exercise's weights were entered in. Inherited from the routine
-   * item; the active workout displays it but does not offer to change it.
+   * Unit this exercise's weights are read in. Inherited from the routine item
+   * and changeable during the session, since the bar you end up on may not be
+   * the one the plan assumed.
    */
   unit: WeightUnit;
   /** Skipped exercises keep their rows but drop out of the progress count. */
@@ -58,7 +69,7 @@ export type Change = { kind: 'sets' | 'weight' | 'swap' | 'add'; label: string }
 
 export type Session = {
   name: string;
-  /** Null for an ad-hoc session — nothing to reconcile against. */
+  /** Null for a freestyle workout — nothing to reconcile against. */
   routine: string | null;
   startedAt: number;
   items: SessionItem[];
@@ -89,8 +100,14 @@ type SessionState = {
   toggleDone: (item: number, set: number) => void;
   addSet: (item: number) => void;
   removeSet: (item: number, set: number) => void;
+  /** Puts a removed set back where it was, for undo. */
+  restoreSet: (item: number, index: number, value: SessionSet) => void;
 
   toggleSkip: (item: number) => void;
+  /** Moves an exercise within the session; the saved routine is untouched. */
+  reorderItems: (from: number, to: number) => void;
+  /** Changes the unit this exercise's weights are read in, for this session. */
+  setItemUnit: (item: number, unit: WeightUnit) => void;
   addExercises: (names: string[], unit: WeightUnit) => void;
   swapExercise: (item: number, name: string) => void;
 
@@ -148,6 +165,11 @@ function toHistory(session: Session, summary: SessionSummary, endedAt: number): 
   };
 }
 
+/** What the exercise was last lifted at, from any workout. */
+function lastFor(name: string): string {
+  return lastPerformed(useHistory.getState().sessions, name) ?? 'no history';
+}
+
 /** Monotonic counter for set ids — unique within a session, which is all that is needed. */
 let seq = 0;
 
@@ -156,7 +178,7 @@ function buildSession(routineName?: string): Session {
   // Only used where a routine item has not chosen one of its own.
   const defaultUnit = useSettings.getState().defaultUnit;
   if (!routine) {
-    return { name: 'Ad-hoc session', routine: null, startedAt: Date.now(), items: [], changes: [] };
+    return { name: 'Freestyle workout', routine: null, startedAt: Date.now(), items: [], changes: [] };
   }
   return {
     name: routine.name,
@@ -165,7 +187,7 @@ function buildSession(routineName?: string): Session {
     items: routine.items.map((it) => ({
       name: it.name,
       target: `${it.sets} × ${it.reps}${it.weight ? ` @ ${it.weight}kg` : ''}`,
-      last: it.last,
+      last: lastFor(it.name),
       planSets: it.sets,
       planWeight: it.weight,
       unit: it.unit ?? defaultUnit,
@@ -216,6 +238,23 @@ export const useSession = create<SessionState>((set, get) => ({
     }),
 
   discard: () => set({ session: null, pausedAt: null, pausedMs: 0, restEndsAt: null, pad: null }),
+
+  restoreSet: (item, index, value) => {
+    const { session } = get();
+    if (!session) return;
+    set({
+      session: {
+        ...session,
+        items: session.items.map((it, i) => {
+          if (i !== item) return it;
+          const sets = [...it.sets];
+          // Clamped: the list may have changed shape while the toast was up.
+          sets.splice(Math.min(index, sets.length), 0, value);
+          return { ...it, sets };
+        }),
+      },
+    });
+  },
 
   /**
    * Ends the session and hands its summary to the summary screen.
@@ -285,11 +324,41 @@ export const useSession = create<SessionState>((set, get) => ({
     const current = session.items[item]?.sets[setIndex];
     if (!current) return;
     const willBeDone = !current.done;
+
+    const ticked = mapSet(session, item, setIndex, (sv) => ({ ...sv, done: willBeDone }));
+    // Completing a set carries its numbers down to the sets after it, so a
+    // straight-across exercise only needs typing once. Un-ticking does not.
+    const next = willBeDone
+      ? {
+          ...ticked,
+          items: ticked.items.map((it, i) =>
+            i === item ? { ...it, sets: fillDown(it.sets, setIndex) } : it,
+          ),
+        }
+      : ticked;
+
     set({
-      session: mapSet(session, item, setIndex, (s) => ({ ...s, done: willBeDone })),
+      session: next,
       // Completing a set starts rest; un-ticking it cancels rest.
       restEndsAt: willBeDone ? Date.now() + restSeconds * 1000 : null,
       pad: null,
+    });
+  },
+
+  reorderItems: (from, to) => {
+    const { session } = get();
+    if (!session) return;
+    set({ session: { ...session, items: moveItem(session.items, from, to) }, pad: null });
+  },
+
+  setItemUnit: (item, unit) => {
+    const { session } = get();
+    if (!session) return;
+    set({
+      session: {
+        ...session,
+        items: session.items.map((it, i) => (i === item ? { ...it, unit } : it)),
+      },
     });
   },
 
@@ -370,7 +439,7 @@ export const useSession = create<SessionState>((set, get) => ({
     const items = names.map((name) => ({
       name,
       target: '3 × 10',
-      last: 'no history',
+      last: lastFor(name),
       planSets: 3,
       planWeight: 0,
       unit,
@@ -398,7 +467,7 @@ export const useSession = create<SessionState>((set, get) => ({
       session: {
         ...session,
         items: session.items.map((it, i) =>
-          i === item ? { ...it, name, last: 'no history' } : it,
+          i === item ? { ...it, name, last: lastFor(name) } : it,
         ),
         changes: [...session.changes, { kind: 'swap' as const, label: `${from} → ${name}` }],
       },
@@ -418,7 +487,8 @@ export const useSession = create<SessionState>((set, get) => ({
     const stored = buffer === '' ? NO_VALUE : buffer;
     set({
       pad: { ...pad, buffer },
-      session: mapSet(session, pad.item, pad.set, (s) => ({ ...s, [pad.field]: stored })),
+      // Marked touched so a later prefill leaves this value alone.
+      session: mapSet(session, pad.item, pad.set, (s) => ({ ...s, [pad.field]: stored, touched: true })),
     });
   },
 

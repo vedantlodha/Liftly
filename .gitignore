@@ -39,4 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-.gradle-dist/
+
+# Locally cached Gradle distribution (see docs/BUILD.md)
+/.gradle-dist
+
+# Labelled APKs and the build counter
+/build

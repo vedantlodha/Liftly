@@ -36,7 +36,7 @@ export function SwapSheet({ current, onDismiss, onSwap }: SwapSheetProps) {
       : 'No exercise matches that.';
 
   return (
-    <Sheet onDismiss={onDismiss}>
+    <Sheet onDismiss={onDismiss} fill>
       <Text variant="sheetTitle">{`Swap ${current}`}</Text>
       <Text style={{ fontFamily: font.regular, fontSize: 12.5, color: ink.muted, marginTop: 6, marginBottom: 14 }}>
         {hint}
@@ -46,7 +46,8 @@ export function SwapSheet({ current, onDismiss, onSwap }: SwapSheetProps) {
         <SearchField value={query} onChangeText={setQuery} placeholder="Search all exercises" tone="sheet" />
       </View>
 
-      <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 7 }}>
+      {/* flex:1 so filtering trims rows off the bottom instead of resizing the sheet. */}
+      <Scroll style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 7 }}>
         {results.map((exercise) => (
           <Pressable
             key={exercise.id}

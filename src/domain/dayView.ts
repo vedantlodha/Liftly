@@ -56,16 +56,21 @@ export function buildDayView(input: {
   /** The routine scheduled for that weekday, already resolved by the caller. */
   scheduled: Routine | undefined;
   log: readonly HistorySession[];
+  /** True when the day was deliberately marked as rest, not merely left unset. */
+  isRest: boolean;
   /** "Push A on Monday", for the rest-day card. Only used for today. */
   nextUp: string;
+  /** Whether any routine exists at all — changes what today's empty card says. */
+  hasRoutines: boolean;
 }): DayView {
-  const { offset, now, scheduled, log, nextUp } = input;
+  const { offset, now, scheduled, log, nextUp, isRest, hasRoutines } = input;
   const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
   const weekday = (date.getDay() + 6) % 7;
   const isToday = offset === 0;
 
-  // Only a past day can have been logged; a future day never is.
-  const logged = offset < 0 ? log.find((s) => s.date === logKeyFor(date)) : undefined;
+  // Today counts: once a workout is finished the card should show what was
+  // done, not offer to start it again. Only the future can never have a log.
+  const logged = offset <= 0 ? log.find((s) => s.date === logKeyFor(date)) : undefined;
   // History wins over the plan — what happened beats what was scheduled.
   const routine = logged ? undefined : scheduled;
 
@@ -95,11 +100,21 @@ export function buildDayView(input: {
     isLogged: logged != null,
     meta,
     rows,
-    restTitle: offset < 0 ? 'Nothing logged' : 'Rest day',
+    // A day can be empty because it is a rest day or because nothing was ever
+    // put on it, and those deserve different words.
+    restTitle: offset < 0 ? 'Nothing logged' : isRest ? 'Rest day' : 'No routine added',
     restSub: isToday
-      ? `Nothing scheduled. Next up is ${nextUp}.`
+      ? isRest
+        ? nextUp === 'nothing'
+          ? 'Recovery day — nothing else scheduled.'
+          : `Recovery day. Next up is ${nextUp}.`
+        : hasRoutines
+          ? 'Nothing scheduled for today. Pick a workout or take the rest.'
+          : 'No routines yet. Build one and put it on a day to get started.'
       : offset < 0
         ? 'No session recorded on this day.'
-        : 'No workout scheduled for this day.',
+        : isRest
+          ? 'Recovery, walk, stretch.'
+          : 'No routine added to this day yet.',
   };
 }

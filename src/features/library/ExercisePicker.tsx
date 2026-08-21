@@ -3,7 +3,9 @@ import { Pressable, View } from 'react-native';
 
 import { border, color, font, ink, radius } from '@/theme/tokens';
 import { Scroll, Sheet, Text } from '@/ui';
-import { exerciseMeta, searchExercises, type CatalogExercise } from './catalog';
+import { ALL_EXERCISES, exerciseMeta, searchExercises, type CatalogExercise } from './catalog';
+import { FilterChips } from './FilterChips';
+import type { CatalogGroup } from '@/catalog/taxonomy';
 import { SearchField } from './SearchField';
 
 export type ExercisePickerProps = {
@@ -22,18 +24,19 @@ export type ExercisePickerProps = {
  */
 export function ExercisePicker({ onDismiss, onConfirm, alreadyAdded = [] }: ExercisePickerProps) {
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<CatalogGroup | 'All'>('All');
   const [picked, setPicked] = useState<string[]>([]);
 
   // Not capped: a cap silently hides whole muscle groups behind a search box,
   // and the sheet scrolls fine with the full catalog.
-  const results = useMemo(() => searchExercises(query), [query]);
+  const results = useMemo(() => searchExercises(query, filter), [query, filter]);
   const existing = useMemo(() => new Set(alreadyAdded), [alreadyAdded]);
 
   const toggle = (name: string) =>
     setPicked((p) => (p.includes(name) ? p.filter((n) => n !== name) : [...p, name]));
 
   return (
-    <Sheet onDismiss={onDismiss}>
+    <Sheet onDismiss={onDismiss} fill>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
         <Text variant="sheetTitle">Add exercises</Text>
         <Pressable
@@ -52,11 +55,14 @@ export function ExercisePicker({ onDismiss, onConfirm, alreadyAdded = [] }: Exer
         <SearchField value={query} onChangeText={setQuery} tone="sheet" />
       </View>
 
-      <Text style={{ fontFamily: font.mono, fontSize: 11, color: ink.index, marginBottom: 6 }}>
-        {`${results.length} ${results.length === 1 ? 'exercise' : 'exercises'}`}
+      <FilterChips value={filter} onChange={setFilter} tone="sheet" />
+
+      <Text style={{ fontFamily: font.mono, fontSize: 11, color: ink.index, paddingBottom: 8 }}>
+        {`${results.length} of ${ALL_EXERCISES.length} exercises`}
       </Text>
 
-      <Scroll keyboardShouldPersistTaps="handled">
+      {/* flex:1 so filtering trims rows off the bottom instead of resizing the sheet. */}
+      <Scroll style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
         {results.map((exercise) => (
           <PickerRow
             key={exercise.id}
@@ -68,12 +74,14 @@ export function ExercisePicker({ onDismiss, onConfirm, alreadyAdded = [] }: Exer
         ))}
 
         {results.length === 0 && (
-          <View style={{ paddingVertical: 34, paddingHorizontal: 16 }}>
-            <Text variant="rowTitle" style={{ textAlign: 'center' }}>
+          <View style={{ paddingTop: 34, paddingBottom: 26, paddingHorizontal: 16 }}>
+            <Text style={{ fontFamily: font.medium, fontSize: 15, color: ink.subtle, textAlign: 'center' }}>
               No match
             </Text>
-            <Text variant="bodySm" style={{ textAlign: 'center', marginTop: 6 }}>
-              Try another name, muscle group, or piece of kit.
+            <Text
+              style={{ fontFamily: font.regular, fontSize: 13, color: ink.eyebrow, textAlign: 'center', marginTop: 6 }}
+            >
+              Try another name or muscle group.
             </Text>
           </View>
         )}

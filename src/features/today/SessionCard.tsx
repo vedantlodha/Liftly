@@ -13,17 +13,20 @@ export type SessionCardProps = {
   onToggleSwitcher: () => void;
   onCloseSwitcher: () => void;
   onPickRoutine: (name: string | null) => void;
+  onCreateRoutine: () => void;
   onEdit: () => void;
   onStart: () => void;
+  /** A workout is already open, so Start would actually resume it. */
+  sessionOpen: boolean;
 };
 
 /**
  * The day card on Today.
  *
- * Shows the plan for today, the log for a past day, or the plan ahead for a
- * future one. Only today is interactive: the design hides Edit, the routine
- * switcher and Start on every other day, because there is nothing to change
- * about a day you are not on.
+ * Shows the plan for today, the log for a day already trained, or the plan
+ * ahead for a future one. Only an unfinished today is interactive: Edit, the
+ * routine switcher and Start all disappear once there is nothing left to
+ * decide — either because the day is not today, or because it is already done.
  */
 export function SessionCard({
   day,
@@ -32,10 +35,13 @@ export function SessionCard({
   onToggleSwitcher,
   onCloseSwitcher,
   onPickRoutine,
+  onCreateRoutine,
   onEdit,
   onStart,
+  sessionOpen,
 }: SessionCardProps) {
   const anchor = useAnchor();
+  const actionable = day.isToday && !day.isLogged;
 
   return (
     <View
@@ -54,14 +60,14 @@ export function SessionCard({
         <Text variant="eyebrowTight" color={color.accent}>
           {day.kicker}
         </Text>
-        {day.isToday && (
+        {actionable && (
           <Pressable accessibilityRole="button" onPress={onEdit} hitSlop={8}>
             <Text style={{ fontFamily: font.medium, fontSize: 11, color: ink.secondary }}>Edit</Text>
           </Pressable>
         )}
       </View>
 
-      {day.isToday ? (
+      {actionable ? (
         // The ref sits on the full-width wrapper, not the trigger: the design's
         // menu spans the card, and the routine name is only as wide as its text.
         <View ref={anchor.ref}>
@@ -92,6 +98,10 @@ export function SessionCard({
               current={day.title}
               anchor={anchor.rect}
               onDismiss={onCloseSwitcher}
+              onCreate={() => {
+                onCloseSwitcher();
+                onCreateRoutine();
+              }}
               onPick={(name) => {
                 onPickRoutine(name);
                 onCloseSwitcher();
@@ -126,7 +136,15 @@ export function SessionCard({
         ))}
       </View>
 
-      {day.isToday && <Button label="Start workout" onPress={onStart} style={{ marginTop: 18 }} />}
+      {actionable && (
+        <Button
+          // Tapping this with a workout already open resumes it rather than
+          // starting a second one, so it should not claim otherwise.
+          label={sessionOpen ? 'Resume workout' : 'Start workout'}
+          onPress={onStart}
+          style={{ marginTop: 18 }}
+        />
+      )}
     </View>
   );
 }

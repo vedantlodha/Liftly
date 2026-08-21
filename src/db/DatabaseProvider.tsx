@@ -7,6 +7,7 @@ import { Text } from '@/ui';
 import { db } from './client';
 import migrations from '../../drizzle/migrations';
 import { hydrateStores } from './hydrate';
+import { watchActiveSession } from './activeSession';
 import { attachDatabase } from './persistence';
 import { initDatabase } from './seed';
 
@@ -36,6 +37,21 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [success, seeded]);
+
+  /**
+   * Mirrors the live workout to disk for as long as the app is mounted.
+   *
+   * Deliberately its own effect. Subscribing inside the seeding effect above
+   * tied the subscription's lifetime to `seeded` — and since that effect *sets*
+   * `seeded`, React tore the subscription down on the very next render and the
+   * early return stopped it being re-established. The result was a mirror that
+   * ran for one render and then silently stopped, so an in-progress workout was
+   * never actually saved.
+   */
+  useEffect(() => {
+    if (!seeded) return;
+    return watchActiveSession();
+  }, [seeded]);
 
   const error = migrationError ?? seedError;
   if (error) return <DbError error={error} />;

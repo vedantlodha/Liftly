@@ -1,12 +1,27 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { border, color, radius, space } from '@/theme/tokens';
+import { useKeyboardHeight } from './useKeyboardHeight';
 
 export type SheetProps = {
   children: ReactNode;
   onDismiss: () => void;
+  /**
+   * Hold a stable height instead of sizing to content.
+   *
+   * Set this on sheets whose body is a filtering list. Without it, typing in the
+   * search box shrinks the list, which shrinks the sheet, which drops it behind
+   * the keyboard. With it the sheet keeps its size and the list trims from the
+   * bottom instead.
+   */
+  fill?: boolean;
 };
+
+/** Fraction of the screen a sheet may occupy, so it never becomes the whole screen. */
+const MAX_FRACTION = 0.8;
+/** Breathing room left above a sheet that has grown to its limit. */
+const TOP_MARGIN = 56;
 
 /**
  * Bottom sheet with a scrim.
@@ -20,7 +35,15 @@ export type SheetProps = {
  * signals "dismissible", but a pan here would compete with the scrollable
  * option lists these sheets contain.
  */
-export function Sheet({ children, onDismiss }: SheetProps) {
+export function Sheet({ children, onDismiss, fill }: SheetProps) {
+  const { height: screen } = useWindowDimensions();
+  const keyboard = useKeyboardHeight();
+
+  // The sheet lifts itself above the keyboard, and its ceiling drops by the same
+  // amount — see useKeyboardHeight for why the window will not do this for us.
+  const available = screen - keyboard - TOP_MARGIN;
+  const limit = Math.max(240, Math.min(screen * MAX_FRACTION, available));
+
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
       <Pressable
@@ -34,9 +57,8 @@ export function Sheet({ children, onDismiss }: SheetProps) {
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: 0,
-          // Capped so the sheet never becomes the whole screen; content scrolls.
-          maxHeight: '80%',
+          bottom: keyboard,
+          ...(fill ? { height: limit } : { maxHeight: limit }),
           backgroundColor: color.surface,
           borderTopWidth: 1,
           borderTopColor: border.control,
@@ -44,7 +66,8 @@ export function Sheet({ children, onDismiss }: SheetProps) {
           borderTopRightRadius: radius.sheet,
           paddingHorizontal: space.gutter - 2,
           paddingTop: 10,
-          paddingBottom: 24,
+          // The keyboard already provides the bottom gap when it is open.
+          paddingBottom: keyboard > 0 ? 12 : 24,
         }}
       >
         <View

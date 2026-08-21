@@ -29,6 +29,8 @@ export const color = {
   fillPressed: '#E4E7EC',
 
   dangerBg: '#FFECEA',
+  /** Deeper danger fill, once releasing would delete. */
+  dangerBgArmed: '#FFDCD7',
   dangerInk: '#B3311F',
   dangerBorder: 'rgba(200,42,26,0.22)',
 
@@ -37,14 +39,21 @@ export const color = {
   inverseSurface: '#14161A',
   /** The accent at 55%, outlining a card while it is being dragged. */
   accentDrag: 'rgba(47,107,255,0.55)',
+  /** A deliberately-chosen rest day in the week strip. */
+  restBg: '#E4F3E9',
+  restBorder: 'rgba(30,105,70,0.22)',
+  restInk: '#1C6240',
   onInverse: '#FFFFFF',
+  /** Undo action on the dark toast, and its pressed state. */
+  undo: '#7FA8FF',
+  undoPressed: '#B9CEFF',
 } as const;
 
 /** Text colours, keyed by where the design uses them. */
 export const ink = {
   /** rgb(20,22,26) — body copy, titles, list rows. */
   primary: '#14161A',
-  /** rgb(36,38,42) — the ad-hoc button label. */
+  /** rgb(36,38,42) — the freestyle button label. */
   strong: '#24262A',
   /** rgb(41,43,47) — stepper glyphs, neutral dialog buttons. */
   control: '#292B2F',
@@ -54,6 +63,8 @@ export const ink = {
   chevron: '#3C3F44',
   /** rgb(67,69,72) — outline and dashed button labels. */
   action: '#434548',
+  /** rgb(80,81,84) — Cancel labels and empty-state headings. */
+  subtle: '#505154',
   /** rgb(90,93,99) — the disclosure caret. */
   caret: '#5A5D63',
   /** rgb(93,94,97) — the session card's meta line. */
@@ -103,6 +114,8 @@ export const border = {
   check: 'rgba(20,22,26,0.181)',
   /** The "+ Add exercise" affordance. */
   dashedStrong: 'rgba(20,22,26,0.204)',
+  /** Line-art glyphs inside empty-state tiles. */
+  glyph: 'rgba(20,22,26,0.28)',
 } as const;
 
 export const radius = {

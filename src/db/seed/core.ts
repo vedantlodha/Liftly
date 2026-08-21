@@ -88,7 +88,9 @@ export async function seedStarterData(db: Db, makeId: MakeId): Promise<void> {
 
   if (!PREFILL_DEMO_DATA) {
     await db.insert(scheduleDays).values(
-      Array.from({ length: 7 }, (_, dayOfWeek) => ({ id: makeId(), dayOfWeek, routineId: null })),
+      // isRest stays false: a fresh install has not chosen rest days, it simply
+      // has no plan yet, and the two read differently on Today.
+      Array.from({ length: 7 }, (_, dayOfWeek) => ({ id: makeId(), dayOfWeek, routineId: null, isRest: false })),
     );
     return;
   }
@@ -130,6 +132,8 @@ export async function seedStarterData(db: Db, makeId: MakeId): Promise<void> {
       id: makeId(),
       dayOfWeek,
       routineId: name ? (routineIds.get(name) ?? null) : null,
+      // The demo plan is a deliberate split, so its blank days are rest days.
+      isRest: !name,
     })),
   );
 
