@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import type { RoutineItem } from '@/data/seed';
 import { formatBuilderWeight, isSteppableReps } from '@/domain/reps';
@@ -26,8 +32,11 @@ export type BuilderItemProps = {
   shift: number;
   onMeasure: (index: number, height: number) => void;
   onDragStart: (index: number) => void;
-  onDragMove: (dy: number) => void;
+  /** `absoluteY` is the finger's window position, for edge auto-scroll. */
+  onDragMove: (dy: number, absoluteY: number) => void;
   onDragEnd: () => void;
+  /** How far the list has auto-scrolled since this drag began. */
+  scrollDelta: SharedValue<number>;
 };
 
 export function BuilderItem({
@@ -45,6 +54,7 @@ export function BuilderItem({
   onDragStart,
   onDragMove,
   onDragEnd,
+  scrollDelta,
 }: BuilderItemProps) {
   const [unitOpen, setUnitOpen] = useState(false);
   const dy = useSharedValue(0);
@@ -53,10 +63,12 @@ export function BuilderItem({
   // `dy` stays on the UI thread for a smooth follow; only the slot the row
   // would land in is reported back to React, and only when it changes.
   const grip = Gesture.Pan()
-    .onBegin(() => runOnJS(onDragStart)(index))
+    .activeOffsetY([-6, 6])
+    .failOffsetX([-14, 14])
+    .onStart(() => runOnJS(onDragStart)(index))
     .onUpdate((e) => {
       dy.value = e.translationY;
-      runOnJS(onDragMove)(e.translationY);
+      runOnJS(onDragMove)(e.translationY, e.absoluteY);
     })
     .onFinalize(() => {
       dy.value = 0;
@@ -65,7 +77,7 @@ export function BuilderItem({
 
   const cardStyle = useAnimatedStyle(() =>
     dragging
-      ? { transform: [{ translateY: dy.value }] }
+      ? { transform: [{ translateY: dy.value + scrollDelta.value }] }
       : // Displaced rows glide; the dragged one tracks the finger exactly.
         { transform: [{ translateY: withTiming(shift, { duration: 180 }) }] },
   );

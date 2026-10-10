@@ -16,7 +16,13 @@ export type SessionCardProps = {
   onCreateRoutine: () => void;
   onEdit: () => void;
   onStart: () => void;
-  /** A workout is already open, so Start would actually resume it. */
+  /**
+   * True only when the open workout *is* this card's routine.
+   *
+   * Any other open session leaves this button saying Start, because that is
+   * what it does: tapping it asks how to close the other one first, rather
+   * than quietly reopening it.
+   */
   sessionOpen: boolean;
 };
 

@@ -13,10 +13,23 @@ import { formatElapsed, sessionProgress, useSession } from '@/stores/useSession'
 import { ResumeCard } from '@/features/today/ResumeCard';
 import { RoutineSwitcher } from '@/features/today/RoutineSwitcher';
 import { SessionCard } from '@/features/today/SessionCard';
+import { useToday } from '@/features/today/useToday';
 import { WeekStrip } from '@/features/today/WeekStrip';
 import { toast } from '@/stores/useToast';
 import { border, color, font, ink, radius, space } from '@/theme/tokens';
-import { Button, Card, CARET, Chevron, Screen, Scroll, Stat, StatRow, Text, useAnchor } from '@/ui';
+import {
+  Button,
+  Card,
+  CARET,
+  Chevron,
+  ConfirmDialog,
+  Screen,
+  Scroll,
+  Stat,
+  StatRow,
+  Text,
+  useAnchor,
+} from '@/ui';
 
 export default function TodayScreen() {
   // Shares the schedule store with the Schedule tab, so a change made in either
@@ -28,9 +41,22 @@ export default function TodayScreen() {
   const session = useSession((s) => s.session);
   const pausedAt = useSession((s) => s.pausedAt);
   const pausedMs = useSession((s) => s.pausedMs);
+  const settled = useSession((s) => s.settled);
+  const finishSession = useSession((s) => s.finish);
+  const clearFinished = useSession((s) => s.clearFinished);
+  const discardSession = useSession((s) => s.discard);
+  const clearSettled = useSession((s) => s.clearSettled);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState<string | null>(null);
   // Days from today, driven by the week strip. 0 is today.
   const [selected, setSelected] = useState(0);
+
+  // Settlement can happen during launch, before a toast can be displayed.
+  useEffect(() => {
+    if (!settled) return;
+    toast(`${settled.day} · ${settled.name} logged — ${settled.setsLogged} sets`);
+    clearSettled();
+  }, [settled, clearSettled]);
 
   // The resume card shows a running clock, so it re-renders on a tick while a
   // session is open — and stops entirely once `finish` clears it.
@@ -41,7 +67,7 @@ export default function TodayScreen() {
     return () => clearInterval(id);
   }, [session]);
 
-  const now = new Date();
+  const now = useToday();
   const ti = dayIndex(now);
   const resolved = resolveWeek(days, now);
   const today = resolved.find((d) => d.dayIndex === ti);
@@ -79,16 +105,23 @@ export default function TodayScreen() {
     toast(name ? `Today swapped to ${name} — this week only` : 'Today set to rest — this week only');
   };
 
-  // The prototype resumes an open session rather than replacing it, so a stray
-  // tap on Start can never discard logged sets.
+  const openSession = (name?: string) => {
+    router.push(name ? `/session/active?routine=${encodeURIComponent(name)}` : '/session/active');
+    if (!name) toast('Freestyle workout — nothing here touches your plan');
+  };
+
+  // Ask before replacing an open workout with a different routine.
   const startSession = (name?: string) => {
-    if (session) {
+    if (!session) {
+      openSession(name);
+      return;
+    }
+    if (!name || name === session.name) {
       router.push(`/session/active?routine=${encodeURIComponent(session.name)}`);
       toast('Resuming your open session');
       return;
     }
-    router.push(name ? `/session/active?routine=${encodeURIComponent(name)}` : '/session/active');
-    if (!name) toast('Freestyle workout — nothing here touches your plan');
+    setPendingStart(name);
   };
 
   return (
@@ -152,7 +185,7 @@ export default function TodayScreen() {
             onCreateRoutine={() => router.push(`/routine/new?day=${ti}&scope=week`)}
             onEdit={() => router.push(`/routine/${encodeURIComponent(day.title)}`)}
             onStart={() => startSession(day.title)}
-            sessionOpen={session != null}
+            sessionOpen={session?.name === day.title}
           />
         ) : (
           <RestDayCard
@@ -205,6 +238,50 @@ export default function TodayScreen() {
           <Stat value={totals.tonnes.toFixed(1)} label="tonnes moved" />
         </StatRow>
       </Scroll>
+
+      {pendingStart && session && (
+        <ConfirmDialog
+          title={`${session.name} is still open`}
+          message={`${sessionProgress(session).done} of ${sessionProgress(session).total} sets logged. Starting ${pendingStart} needs that one closed first.`}
+          onDismiss={() => setPendingStart(null)}
+          // Finishing first is both the safest and the likeliest intent: the
+          // old workout was done, it just never got closed.
+          actions={[
+            {
+              label: `Finish ${session.name} and start ${pendingStart}`,
+              tone: 'primary',
+              onPress: () => {
+                const next = pendingStart;
+                setPendingStart(null);
+                finishSession();
+                // Nothing is navigating to the summary screen, so the record it
+                // reads must not be left sitting there for the next visit.
+                clearFinished();
+                openSession(next);
+              },
+            },
+            {
+              label: `Back to ${session.name}`,
+              tone: 'neutral',
+              onPress: () => {
+                setPendingStart(null);
+                router.push(`/session/active?routine=${encodeURIComponent(session.name)}`);
+              },
+            },
+            {
+              label: 'Discard it and start fresh',
+              tone: 'danger',
+              onPress: () => {
+                const next = pendingStart;
+                setPendingStart(null);
+                discardSession();
+                openSession(next);
+                toast(`${session.name} discarded`);
+              },
+            },
+          ]}
+        />
+      )}
     </Screen>
   );
 }

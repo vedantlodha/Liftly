@@ -3,7 +3,9 @@ import { create } from 'zustand';
 import { moveItem } from '@/domain/reorder';
 import { lastPerformed } from '@/domain/lastPerformed';
 import { fillDown } from '@/domain/sets';
-import { summariseSession, type SessionSummary } from '@/domain/volume';
+import { formatSessionDate, lastSetAt, summariseSession, type SessionSummary } from '@/domain/volume';
+import { hasExpired, trainingDayOf } from '@/domain/trainingDay';
+import { applyPlanChanges, recordSetCount, weightChanges, type Change } from '@/domain/planChanges';
 import { useHistory } from './useHistory';
 import { newId } from '@/db/id';
 import { persist } from '@/db/persistence';
@@ -12,15 +14,9 @@ import { getRoutineByName } from '@/db/repositories/routines';
 import type { HistorySession } from '@/data/seed';
 import { NO_VALUE, type WeightUnit } from './useUnits';
 import { useSettings } from './useSettings';
-import { findRoutine } from './useRoutines';
+import { findRoutine, useRoutines } from './useRoutines';
 
-/**
- * The live workout.
- *
- * In-memory for now. Phase 4 proper persists this to MMKV so a session survives
- * the app being killed mid-set — which is why every mutation replaces state
- * rather than mutating in place: the same reducers will serialise unchanged.
- */
+/** Replace state on edits so `watchActiveSession` can detect and persist changes. */
 
 export { NO_VALUE };
 
@@ -44,6 +40,8 @@ export type SessionSet = {
    * stops that from wiping a set the user already filled in by hand.
    */
   touched?: boolean;
+  /** Completion time in epoch ms; cleared on un-tick. */
+  doneAt?: number;
 };
 
 export type SessionItem = {
@@ -65,7 +63,7 @@ export type SessionItem = {
   sets: SessionSet[];
 };
 
-export type Change = { kind: 'sets' | 'weight' | 'swap' | 'add'; label: string };
+export type { Change };
 
 export type Session = {
   name: string;
@@ -74,6 +72,15 @@ export type Session = {
   startedAt: number;
   items: SessionItem[];
   changes: Change[];
+};
+
+export type Settled = {
+  name: string;
+  /** The day it was filed under, e.g. "Tue 11 Aug". */
+  day: string;
+  setsLogged: number;
+  /** False when it had no completed sets and was dropped rather than logged. */
+  logged: boolean;
 };
 
 /** Which cell the numeric keypad is editing. */
@@ -89,10 +96,27 @@ type SessionState = {
   pad: PadTarget | null;
   /** Set by `finish`, read by the summary screen, cleared when it closes. */
   finished: SessionSummary | null;
+  /** Retained until Today can report a settlement that happened during launch. */
+  settled: Settled | null;
 
   start: (routineName?: string) => void;
   discard: () => void;
-  finish: () => void;
+  /**
+   * Ends the session, optionally writing its off-plan changes into the routine.
+   *
+   * The question is put to the user at the end rather than each time they
+   * deviate, because mid-set is the worst possible moment to ask whether this
+   * is the plan now.
+   */
+  finish: (applyToRoutine?: boolean) => void;
+  /**
+   * Off-plan deviations worth asking about, or empty when there is nothing to
+   * ask — including every freestyle session, which has no plan to deviate from.
+   */
+  planChanges: () => Change[];
+  /** Closes a workout that has outlived its day. See `@/domain/trainingDay`. */
+  settleExpired: (now?: number) => Settled | null;
+  clearSettled: () => void;
   clearFinished: () => void;
   pause: () => void;
   resume: () => void;
@@ -136,6 +160,7 @@ function toLoggedSet(sv: SessionSet): LoggedSet {
     weightKg: sv.weight === NO_VALUE || !Number.isFinite(weight) ? null : weight,
     durationSec: unit === 's' ? value : null,
     distanceM: unit === 'm' ? value : null,
+    completedAt: sv.doneAt != null ? new Date(sv.doneAt) : null,
   };
 }
 
@@ -163,6 +188,46 @@ function toHistory(session: Session, summary: SessionSummary, endedAt: number): 
           .map((sv) => `${sv.weight === NO_VALUE ? 'BW' : sv.weight} × ${sv.reps}`),
       })),
   };
+}
+
+/** Shared finish/expiry path; training ends at the last set, not at `closedAt`. */
+function logSession(
+  session: Session,
+  pausedAt: number | null,
+  pausedMs: number,
+  closedAt: number,
+): SessionSummary {
+  const stoppedAt = lastSetAt(session.items) ?? closedAt;
+  // Exclude only pause time before the last set; later time is already outside the duration.
+  const banked =
+    pausedMs + (pausedAt != null ? Math.max(0, Math.min(closedAt, stoppedAt) - pausedAt) : 0);
+  const summary = summariseSession(
+    { name: session.name, items: session.items, startedAt: session.startedAt, pausedMs: banked },
+    closedAt,
+    useSettings.getState().defaultUnit,
+  );
+  const logged = toHistory(session, summary, stoppedAt);
+
+  // Update History on web too, where no database is attached.
+  useHistory.getState().add(logged);
+  persist((db) =>
+    saveSession(db, newId, {
+      id: logged.id,
+      name: session.name,
+      routineId: null,
+      startedAt: new Date(session.startedAt),
+      endedAt: new Date(stoppedAt),
+      pausedMs: banked,
+      exercises: session.items
+        .filter((it) => it.sets.some((sv) => sv.done))
+        .map((it) => ({
+          name: it.name,
+          targetSnapshot: it.target || null,
+          sets: it.sets.filter((sv) => sv.done).map(toLoggedSet),
+        })),
+    }),
+  );
+  return summary;
 }
 
 /** What the exercise was last lifted at, from any workout. */
@@ -227,6 +292,7 @@ export const useSession = create<SessionState>((set, get) => ({
   restSeconds: 90,
   pad: null,
   finished: null,
+  settled: null,
 
   start: (routineName) =>
     set({
@@ -242,59 +308,49 @@ export const useSession = create<SessionState>((set, get) => ({
   restoreSet: (item, index, value) => {
     const { session } = get();
     if (!session) return;
+    const target = session.items[item];
+    if (!target) return;
+    const sets = [...target.sets];
+    // Clamped: the list may have changed shape while the toast was up.
+    sets.splice(Math.min(index, sets.length), 0, value);
+    // Undo restores the deviation as well as the set, so putting an extra set
+    // back also puts back the offer to write it into the plan.
+    const changes = recordSetCount(session.changes, target.name, sets.length, target.planSets);
     set({
       session: {
         ...session,
-        items: session.items.map((it, i) => {
-          if (i !== item) return it;
-          const sets = [...it.sets];
-          // Clamped: the list may have changed shape while the toast was up.
-          sets.splice(Math.min(index, sets.length), 0, value);
-          return { ...it, sets };
-        }),
+        items: session.items.map((it, i) => (i !== item ? it : { ...it, sets })),
+        changes,
       },
     });
   },
 
-  /**
-   * Ends the session and hands its summary to the summary screen.
-   *
-   * Paused time is banked first, so a session finished while paused reports the
-   * training time rather than the wall clock.
-   */
-  finish: () => {
+  planChanges: () => {
+    const { session } = get();
+    // A freestyle workout deviates from nothing, so there is nothing to offer.
+    if (!session?.routine) return [];
+    const routine = findRoutine(session.routine);
+    if (!routine) return [];
+    // Set counts, swaps and additions were recorded as they happened; weight
+    // increases can only be judged once every set is in.
+    return [
+      ...session.changes,
+      ...weightChanges(session.items, routine.items, useSettings.getState().defaultUnit),
+    ];
+  },
+
+  finish: (applyToRoutine = false) => {
     const { session, pausedAt, pausedMs } = get();
     if (!session) return;
-    const endedAt = Date.now();
-    const banked = pausedMs + (pausedAt != null ? endedAt - pausedAt : 0);
-    const summary = summariseSession(
-      { name: session.name, items: session.items, startedAt: session.startedAt, pausedMs: banked },
-      endedAt,
-      useSettings.getState().defaultUnit,
-    );
-    const logged = toHistory(session, summary, endedAt);
 
-    // The store is updated first so History is correct even on web, where there
-    // is no database; the write below is what makes it survive a relaunch.
-    useHistory.getState().add(logged);
-    persist((db) =>
-      saveSession(db, newId, {
-        // Same id as the history record, so deleting from either side agrees.
-        id: logged.id,
-        name: session.name,
-        routineId: null,
-        startedAt: new Date(session.startedAt),
-        endedAt: new Date(endedAt),
-        pausedMs: banked,
-        exercises: session.items
-          .filter((it) => it.sets.some((sv) => sv.done))
-          .map((it) => ({
-            name: it.name,
-            targetSnapshot: it.target || null,
-            sets: it.sets.filter((sv) => sv.done).map(toLoggedSet),
-          })),
-      }),
-    );
+    if (applyToRoutine && session.routine) {
+      const routine = findRoutine(session.routine);
+      if (routine) {
+        useRoutines.getState().save(applyPlanChanges(routine, get().planChanges()), routine.name);
+      }
+    }
+
+    const summary = logSession(session, pausedAt, pausedMs, Date.now());
 
     set({
       finished: summary,
@@ -306,7 +362,37 @@ export const useSession = create<SessionState>((set, get) => ({
     });
   },
 
+  /** Log completed sets from an expired workout; discard empty workouts. */
+  settleExpired: (now = Date.now()) => {
+    const { session, pausedAt, pausedMs } = get();
+    if (!session || !hasExpired(session.startedAt, now)) return null;
+
+    const setsLogged = session.items.reduce(
+      (n, it) => n + it.sets.filter((sv) => sv.done).length,
+      0,
+    );
+    const summary = setsLogged > 0 ? logSession(session, pausedAt, pausedMs, now) : null;
+
+    const settled: Settled = {
+      name: session.name,
+      day: summary?.when ?? formatSessionDate(trainingDayOf(session.startedAt)),
+      setsLogged,
+      logged: summary != null,
+    };
+    set({
+      session: null,
+      pausedAt: null,
+      pausedMs: 0,
+      restEndsAt: null,
+      pad: null,
+      settled: settled.logged ? settled : null,
+    });
+    return settled;
+  },
+
   clearFinished: () => set({ finished: null }),
+
+  clearSettled: () => set({ settled: null }),
 
   // Pausing banks the remaining rest rather than letting it tick away while the
   // user is not training.
@@ -325,7 +411,11 @@ export const useSession = create<SessionState>((set, get) => ({
     if (!current) return;
     const willBeDone = !current.done;
 
-    const ticked = mapSet(session, item, setIndex, (sv) => ({ ...sv, done: willBeDone }));
+    const ticked = mapSet(session, item, setIndex, (sv) => ({
+      ...sv,
+      done: willBeDone,
+      doneAt: willBeDone ? Date.now() : undefined,
+    }));
     // Completing a set carries its numbers down to the sets after it, so a
     // straight-across exercise only needs typing once. Un-ticking does not.
     const next = willBeDone
@@ -373,16 +463,7 @@ export const useSession = create<SessionState>((set, get) => ({
       { id: `add-${seq++}`, weight: previous?.weight ?? NO_VALUE, reps: previous?.reps ?? '10', done: false },
     ];
     // Going past the plan's set count is an off-plan change worth surfacing.
-    const changes =
-      sets.length > target.planSets
-        ? [
-            ...session.changes.filter((c) => !(c.kind === 'sets' && c.label.startsWith(target.name))),
-            {
-              kind: 'sets' as const,
-              label: `${target.name} — extra set (${sets.length} total, plan says ${target.planSets})`,
-            },
-          ]
-        : session.changes;
+    const changes = recordSetCount(session.changes, target.name, sets.length, target.planSets);
     set({
       session: { ...session, items: session.items.map((it, i) => (i === item ? { ...it, sets } : it)), changes },
     });
@@ -391,12 +472,17 @@ export const useSession = create<SessionState>((set, get) => ({
   removeSet: (item, setIndex) => {
     const { session } = get();
     if (!session) return;
+    const target = session.items[item];
+    if (!target) return;
+    const sets = target.sets.filter((_, j) => j !== setIndex);
+    // Taking the extra set back off has to withdraw the deviation too, or
+    // finishing would offer to write a set count nobody trained into the plan.
+    const changes = recordSetCount(session.changes, target.name, sets.length, target.planSets);
     set({
       session: {
         ...session,
-        items: session.items.map((it, i) =>
-          i !== item ? it : { ...it, sets: it.sets.filter((_, j) => j !== setIndex) },
-        ),
+        items: session.items.map((it, i) => (i !== item ? it : { ...it, sets })),
+        changes,
       },
       pad: null,
     });
@@ -452,7 +538,11 @@ export const useSession = create<SessionState>((set, get) => ({
         items: [...session.items, ...items],
         changes: [
           ...session.changes,
-          ...names.map((name) => ({ kind: 'add' as const, label: `${name} — added, not in the routine` })),
+          ...names.map((name) => ({
+            kind: 'add' as const,
+            label: `${name} — added, not in the routine`,
+            name,
+          })),
         ],
       },
     });
@@ -469,7 +559,10 @@ export const useSession = create<SessionState>((set, get) => ({
         items: session.items.map((it, i) =>
           i === item ? { ...it, name, last: lastFor(name) } : it,
         ),
-        changes: [...session.changes, { kind: 'swap' as const, label: `${from} → ${name}` }],
+        changes: [
+          ...session.changes,
+          { kind: 'swap' as const, label: `${from} → ${name}`, name: from, to: name },
+        ],
       },
       pad: null,
     });

@@ -4,11 +4,13 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { BackHandler } from 'react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import type { Change } from '@/domain/planChanges';
 import { ExercisePicker } from '@/features/library/ExercisePicker';
 import { SwapSheet } from '@/features/library/SwapSheet';
 import { ExerciseCard } from '@/features/session/ExerciseCard';
 import { useReorder } from '@/features/routines/useReorder';
 import { Keypad } from '@/features/session/Keypad';
+import { PlanChangesSheet } from '@/features/session/PlanChangesSheet';
 import { RestTimer } from '@/features/session/RestTimer';
 import { toast } from '@/stores/useToast';
 import { unitLabel } from '@/stores/useUnits';
@@ -43,6 +45,8 @@ export default function ActiveSessionScreen() {
   }, [routine, session, s]);
 
   const [dialog, setDialog] = useState<'finish' | 'leave' | null>(null);
+  // Non-null once Finish is confirmed on a session that went off plan.
+  const [offPlan, setOffPlan] = useState<Change[] | null>(null);
 
   /**
    * Returns to Today.
@@ -62,6 +66,19 @@ export default function ActiveSessionScreen() {
     console.log('[liftly] leaving workout — canGoBack:', router.canGoBack());
     router.navigate('/(tabs)');
   };
+  /**
+   * Ends the workout and shows its summary.
+   *
+   * `replace`, not `push`: the finished session must not be reachable again by
+   * backing into it.
+   */
+  const finishAndLeave = (applyToRoutine: boolean) => {
+    const routine = session?.routine;
+    s.finish(applyToRoutine);
+    if (applyToRoutine && routine) toast(`${routine} updated for every week`);
+    router.replace('/session/summary');
+  };
+
   const [picking, setPicking] = useState(false);
   const [swapAt, setSwapAt] = useState<number | null>(null);
   const defaultUnit = useSettings((st) => st.defaultUnit);
@@ -190,6 +207,7 @@ export default function ActiveSessionScreen() {
       </View>
 
       <Scroll
+        {...reorder.scrollProps}
         contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 16, paddingBottom: 200 }}
         showsVerticalScrollIndicator={false}
       >
@@ -215,6 +233,7 @@ export default function ActiveSessionScreen() {
             onDragStart={reorder.onDragStart}
             onDragMove={reorder.onDragMove}
             onDragEnd={reorder.onDragEnd}
+            scrollDelta={reorder.scrollDelta}
             onSwap={() => setSwapAt(i)}
             onToggleSkip={() => {
               s.toggleSkip(i);
@@ -315,14 +334,33 @@ export default function ActiveSessionScreen() {
               tone: 'primary',
               onPress: () => {
                 setDialog(null);
-                s.finish();
-                // `replace`, not `push`: the finished session must not be
-                // reachable again by backing into it.
-                router.replace('/session/summary');
+                const changes = s.planChanges();
+                // The session promised "we'll ask what to keep at the end" —
+                // this is that ask. Nothing to ask about goes straight through.
+                if (changes.length > 0) setOffPlan(changes);
+                else finishAndLeave(false);
               },
             },
             { label: 'Keep training', tone: 'neutral', onPress: () => setDialog(null) },
           ]}
+        />
+      )}
+
+      {offPlan && session?.routine && (
+        <PlanChangesSheet
+          routineName={session.routine}
+          changes={offPlan}
+          // Dismissing is not a third answer — the workout is still unfinished,
+          // so it returns to the session rather than saving either way.
+          onDismiss={() => setOffPlan(null)}
+          onJustToday={() => {
+            setOffPlan(null);
+            finishAndLeave(false);
+          }}
+          onUpdateRoutine={() => {
+            setOffPlan(null);
+            finishAndLeave(true);
+          }}
         />
       )}
 

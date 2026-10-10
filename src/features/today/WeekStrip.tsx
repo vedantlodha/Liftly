@@ -5,6 +5,7 @@ import { logKeyFor } from '@/domain/dayView';
 import { dayIndex } from '@/domain/week';
 import { useHistory } from '@/stores/useHistory';
 import { border, color, font, ink, space } from '@/theme/tokens';
+import { useToday } from './useToday';
 import { Scroll, Text } from '@/ui';
 
 const CELL = 54;
@@ -74,8 +75,7 @@ export type WeekStripProps = {
 
 export function WeekStrip({ selectedOffset, onSelect, restDays }: WeekStripProps) {
   const log = useHistory((s) => s.sessions);
-  // Rebuilt when the log changes, so finishing a workout ticks today's cell.
-  const today = useRef(new Date()).current;
+  const today = useToday();
   const cells = useMemo(
     () => buildStrip(today, new Set(log.map((s) => s.date)), restDays),
     [today, log, restDays],

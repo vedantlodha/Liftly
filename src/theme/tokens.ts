@@ -95,6 +95,8 @@ export const ink = {
 export const border = {
   /** Rows inside a list card. */
   rowSoft: 'rgba(20,22,26,0.075)',
+  /** Rows inside a filled list panel — the off-plan change list, menu rows. */
+  rowFill: 'rgba(20,22,26,0.078)',
   /** Exercise rows in the session card. */
   row: 'rgba(20,22,26,0.083)',
   /** Stat tiles, plain week-strip cells, the session list's top rule. */

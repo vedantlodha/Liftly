@@ -6,7 +6,7 @@ export { EmptyState, ListGlyph, type EmptyStateProps } from './EmptyState';
 export { CARET, Chevron, type ChevronProps } from './Chevron';
 export { Pill, type PillProps } from './Pill';
 export { Screen, ScreenHeader, SubScreenBar } from './Screen';
-export { Scroll, type ScrollViewProps } from './Scroll';
+export { Scroll, type ScrollProps, type ScrollViewProps } from './Scroll';
 export { Sheet, type SheetProps } from './Sheet';
 export { Stat, StatRow, type StatProps } from './Stat';
 export { Stepper, type StepperProps } from './Stepper';

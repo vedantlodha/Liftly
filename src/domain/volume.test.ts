@@ -5,6 +5,7 @@ import {
   countCompletedSets,
   formatSessionDate,
   formatTonnes,
+  lastSetAt,
   sessionVolume,
   summariseSession,
   type SummarisableItem,
@@ -128,5 +129,46 @@ describe('formatTonnes', () => {
   it('renders kilograms as tonnes to one decimal', () => {
     assert.equal(formatTonnes(8400), '8.4');
     assert.equal(formatTonnes(0), '0.0');
+  });
+});
+
+describe('lastSetAt', () => {
+  const tick = (doneAt?: number, done = true) => ({ weight: '80', reps: '8', done, doneAt });
+
+  it('is null when nothing was ticked', () => {
+    assert.equal(lastSetAt([{ name: 'Squat', sets: [tick(undefined, false)] }]), null);
+  });
+
+  it('takes the latest tick, not the last set in order', () => {
+    const items: SummarisableItem[] = [
+      { name: 'Bench', sets: [tick(3_000), tick(1_000)] },
+      { name: 'Row', sets: [tick(2_000)] },
+    ];
+    assert.equal(lastSetAt(items), 3_000);
+  });
+
+  it('ignores ticks on sets that were later un-ticked', () => {
+    const items: SummarisableItem[] = [{ name: 'Bench', sets: [tick(1_000), tick(9_000, false)] }];
+    assert.equal(lastSetAt(items), 1_000);
+  });
+});
+
+describe('summariseSession across midnight', () => {
+  const startedAt = new Date(2026, 7, 11, 23, 50).getTime();
+  const lastTick = new Date(2026, 7, 12, 0, 10).getTime();
+  const items: SummarisableItem[] = [
+    { name: 'Bench', sets: [{ weight: '80', reps: '8', done: true, doneAt: lastTick }] },
+  ];
+
+  it('files the session under the day it started', () => {
+    const summary = summariseSession({ name: 'Push A', items, startedAt, pausedMs: 0 }, lastTick, 'KG');
+    assert.equal(summary.when, 'Tue 11 Aug');
+  });
+
+  it('measures to the last set, not to when the session was closed', () => {
+    const closedAt = new Date(2026, 7, 12, 9, 0).getTime();
+    const summary = summariseSession({ name: 'Push A', items, startedAt, pausedMs: 0 }, closedAt, 'KG');
+    assert.equal(summary.durationMin, 20);
+    assert.equal(summary.when, 'Tue 11 Aug');
   });
 });

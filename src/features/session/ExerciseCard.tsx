@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import type { SessionItem } from '@/stores/useSession';
 import { WEIGHT_UNITS, type WeightUnit } from '@/stores/useUnits';
@@ -31,8 +37,11 @@ export type ExerciseCardProps = {
   shift: number;
   onMeasure: (index: number, height: number) => void;
   onDragStart: (index: number) => void;
-  onDragMove: (dy: number) => void;
+  /** `absoluteY` is the finger's window position, for edge auto-scroll. */
+  onDragMove: (dy: number, absoluteY: number) => void;
   onDragEnd: () => void;
+  /** How far the list has auto-scrolled since this drag began. */
+  scrollDelta: SharedValue<number>;
 };
 
 export function ExerciseCard({
@@ -53,6 +62,7 @@ export function ExerciseCard({
   onDragStart,
   onDragMove,
   onDragEnd,
+  scrollDelta,
 }: ExerciseCardProps) {
   // Only the first card hints, and only while there is a set to hint on.
   const peek = usePeekOnce('sets', index === 0 && item.sets.length > 0 && !paused);
@@ -62,10 +72,12 @@ export function ExerciseCard({
   // start from a set row, and dy stays on the UI thread for a smooth follow.
   const grip = Gesture.Pan()
     .enabled(!paused)
-    .onBegin(() => runOnJS(onDragStart)(index))
+    .activeOffsetY([-6, 6])
+    .failOffsetX([-14, 14])
+    .onStart(() => runOnJS(onDragStart)(index))
     .onUpdate((e) => {
       dy.value = e.translationY;
-      runOnJS(onDragMove)(e.translationY);
+      runOnJS(onDragMove)(e.translationY, e.absoluteY);
     })
     .onFinalize(() => {
       dy.value = 0;
@@ -74,7 +86,7 @@ export function ExerciseCard({
 
   const cardStyle = useAnimatedStyle(() =>
     dragging
-      ? { transform: [{ translateY: dy.value }] }
+      ? { transform: [{ translateY: dy.value + scrollDelta.value }] }
       : { transform: [{ translateY: withTiming(shift, { duration: 180 }) }] },
   );
 

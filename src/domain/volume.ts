@@ -7,8 +7,10 @@
 
 import { NO_VALUE, unitLabel, type WeightUnit } from '@/stores/useUnits';
 
+import { trainingDayOf } from './trainingDay';
+
 /** The shape this module needs, so it does not depend on the store. */
-export type SummarisableSet = { weight: string; reps: string; done: boolean };
+export type SummarisableSet = { weight: string; reps: string; done: boolean; doneAt?: number };
 export type SummarisableItem = { name: string; sets: SummarisableSet[]; unit?: WeightUnit };
 
 export type SessionSummary = {
@@ -72,6 +74,18 @@ export function countCompletedSets(items: readonly SummarisableItem[]): number {
   return items.reduce((n, item) => n + item.sets.filter((s) => s.done).length, 0);
 }
 
+/** Latest completed-set timestamp, used to exclude time spent waiting to finish. */
+export function lastSetAt(items: readonly SummarisableItem[]): number | null {
+  let latest: number | null = null;
+  for (const item of items) {
+    for (const set of item.sets) {
+      if (!set.done || set.doneAt == null) continue;
+      if (latest == null || set.doneAt > latest) latest = set.doneAt;
+    }
+  }
+  return latest;
+}
+
 export function formatSessionDate(date: Date): string {
   return `${DAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
@@ -97,10 +111,11 @@ export function summariseSession(
   endedAt: number,
   unit: WeightUnit,
 ): SessionSummary {
-  const activeMs = Math.max(0, endedAt - input.startedAt - input.pausedMs);
+  const stoppedAt = lastSetAt(input.items) ?? endedAt;
+  const activeMs = Math.max(0, stoppedAt - input.startedAt - input.pausedMs);
   return {
     name: input.name,
-    when: formatSessionDate(new Date(endedAt)),
+    when: formatSessionDate(trainingDayOf(input.startedAt)),
     // Paused time is excluded, so the duration reflects training, not elapsed clock.
     durationMin: Math.max(1, Math.round(activeMs / 60_000)),
     setsCompleted: countCompletedSets(input.items),

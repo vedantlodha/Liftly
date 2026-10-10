@@ -160,6 +160,7 @@ export default function RoutineBuilderScreen() {
       </View>
 
       <Scroll
+        {...reorder.scrollProps}
         contentContainerStyle={{ padding: space.gutter, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -261,6 +262,7 @@ export default function RoutineBuilderScreen() {
               onDragStart={reorder.onDragStart}
               onDragMove={reorder.onDragMove}
               onDragEnd={reorder.onDragEnd}
+              scrollDelta={reorder.scrollDelta}
             />
           ))}
         </View>

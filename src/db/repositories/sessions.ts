@@ -15,6 +15,8 @@ export type LoggedSet = {
   weightKg: number | null;
   durationSec: number | null;
   distanceM: number | null;
+  /** When the set was ticked. Falls back to the session's end when unknown. */
+  completedAt?: Date | null;
 };
 
 export type LoggedExercise = {
@@ -98,7 +100,7 @@ export async function saveSession(db: Db, makeId: () => string, session: NewSess
         sessionExerciseId,
         position: i,
         done: true,
-        completedAt: session.endedAt,
+        completedAt: set.completedAt ?? session.endedAt,
         reps: set.reps,
         weightKg: set.weightKg,
         durationSec: set.durationSec,

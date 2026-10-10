@@ -12,6 +12,8 @@ import { useRoutines } from '@/stores/useRoutines';
 import { useSchedule } from '@/stores/useSchedule';
 import { useSettings } from '@/stores/useSettings';
 import type { DayIndex } from '@/domain/week';
+import { trainingDayOf } from '@/domain/trainingDay';
+import { formatSessionDate } from '@/domain/volume';
 import type { HistorySession, Routine } from '@/data/seed';
 import type { Db } from './client';
 import { listSessions } from './repositories/sessions';
@@ -36,9 +38,6 @@ function formatSetValue(set: {
   const weight = set.weightKg == null || set.weightKg === 0 ? 'BW' : String(set.weightKg);
   return `${weight} × ${set.reps ?? 0}`;
 }
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export async function hydrateStores(db: Db): Promise<void> {
   const settings = await getAllSettings(db);
@@ -94,7 +93,9 @@ export async function hydrateStores(db: Db): Promise<void> {
     return {
       id: s.id,
       name: s.name,
-      date: `${DAYS[started.getDay()]} ${started.getDate()} ${MONTHS[started.getMonth()]}`,
+      // Same derivation as `summariseSession`, so an entry does not change date
+      // between the session being finished and the app being relaunched.
+      date: formatSessionDate(trainingDayOf(started)),
       duration: `${Math.max(1, Math.round(activeMs / 60_000))}m`,
       setCount: String(setCount),
       volume: `${(volume / 1000).toFixed(1)}t`,

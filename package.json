@@ -36,6 +36,8 @@
     "@types/sql.js": "^1.4.11",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "sql.js": "^1.14.1",
     "typescript": "~6.0.3"
   },

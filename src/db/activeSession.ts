@@ -56,12 +56,10 @@ export function watchActiveSession(): () => void {
     if (changed) save();
   });
 
-  // Second line of defence. Backgrounding is precisely when Android decides to
-  // reclaim the process — often minutes later, mid-rest, with the phone in a
-  // pocket — so the snapshot is flushed on the way out rather than trusting the
-  // last state change to have already been queued.
+  // Save on background; check expiry on return because background timers may stop.
   const appState = AppState.addEventListener('change', (next) => {
-    if (next !== 'active') save();
+    if (next === 'active') useSession.getState().settleExpired();
+    else save();
   });
 
   return () => {
@@ -102,4 +100,13 @@ export async function restoreActiveSession(db: Db): Promise<void> {
     restEndsAt: saved.restEndsAt != null && saved.restEndsAt > Date.now() ? saved.restEndsAt : null,
     pad: null,
   });
+
+  // Settlement reads the restored session from the store.
+  const settled = useSession.getState().settleExpired();
+  if (settled) {
+    // The mirror is not armed during hydration. Clear this snapshot explicitly
+    // to avoid settling it again on the next launch.
+    await setSetting(db, SETTING_KEYS.activeSession, '');
+    console.log(`[liftly] closed stale workout "${settled.name}" from ${settled.day}`);
+  }
 }
